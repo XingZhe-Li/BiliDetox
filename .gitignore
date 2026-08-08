@@ -1,0 +1,30 @@
+*.iml
+.gradle
+/local.properties
+/.idea/caches
+/.idea/libraries
+/.idea/modules.xml
+/.idea/workspace.xml
+/.idea/navEditor.xml
+/.idea/assetWizardSettings.xml
+.DS_Store
+/build
+/captures
+.externalNativeBuild
+.cxx
+local.properties
+
+# Kotlin
+.kotlin
+
+# App build outputs
+/app/build
+
+# NPatchLauncher compiled class (patch.bat regenerates it)
+/tools/build/
+
+# Original Bilibili APK is a binary dependency, not source
+/original/*.apk
+
+# Patch outputs
+/output/

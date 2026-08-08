@@ -1,0 +1,7 @@
+<resources>
+    <!--
+      模块没有 UI，这里只是为了让 manifest 的 android:theme 有值可引。
+      刻意用平台自带主题，避免为此引入 material / appcompat 依赖。
+    -->
+    <style name="Theme.BiliDetox" parent="@android:style/Theme.DeviceDefault.DayNight" />
+</resources>

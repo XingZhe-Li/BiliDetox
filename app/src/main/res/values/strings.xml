@@ -1,0 +1,4 @@
+<resources>
+    <string name="app_name">BiliDetox</string>
+    <string name="xposed_description">移除哔哩哔哩首页推荐/热门 Tab，并禁用应用内更新。</string>
+</resources>
