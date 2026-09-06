@@ -44,13 +44,16 @@ NPatch 的命令行 jar（v1.0.6-698，即 NPatch 官方 release）已随仓库�
 
 把未修改的 Bilibili 9.6.0 APK 放到 `original/iBiliPlayer-bili.apk`（文件路径和命名不强制，脚本接受参数），然后：
 
-```cmd
-patch.bat
+```sh
+python patch.py                # 默认：只嵌入模块
+python patch.py --libpatch     # 额外对 libbili.so 打网络探测补丁
 ```
 
-产物写入 `output/iBiliPlayer-bili-698-npatched.apk`。
+产物写入 `output/`，脚本结束时会打印实际路径。产物名由 NPatch 从输入名派生：默认 `iBiliPlayer-bili-698-npatched.apk`；带 `--libpatch` 时为 `iBiliPlayer-bili-libpatched-698-npatched.apk`。
 
-脚本依次执行：编译模块 → 编译 NPatch 启动器 → 用 NPatch 把模块嵌入原 APK。完整说明见 [`docs/BUILD.md`](docs/BUILD.md)。
+`--libpatch` 默认关闭：该补丁与 B 站版本强绑定（按 BuildId 校验，当前仅支持 9.6.0，换版本会报错退出）。它用于修复部分机型上 B 站自带网络探测线程引发的 `stack corruption detected` 崩溃，取证与补丁细节见 [`tools/patch_libbili.py`](tools/patch_libbili.py)。
+
+脚本依次执行：编译模块 → 编译 NPatch 启动器 →（可选）补丁 libbili.so → 用 NPatch 把模块嵌入原 APK。完整说明见 [`docs/BUILD.md`](docs/BUILD.md)。
 
 ### 安装
 
@@ -91,7 +94,7 @@ BiliDetox: [MainResourceManager#c] 已移除 2 个 Tab: [bilibili://pegasus/prom
 | `bilibili://pgc/home` | 番剧 |
 | `bilibili://pgc/home?home_flow_type=2` | 影视 |
 
-注意：uri 匹配忽略 query，所以 `bilibili://pgc/home` 会同时命中番剧和影视（影视只多了 `?home_flow_type=2`）。promo 和 hottopic 不存在这个歧义。修改后重新 `patch.bat` 并安装即可。
+注意：uri 匹配忽略 query，所以 `bilibili://pgc/home` 会同时命中番剧和影视（影视只多了 `?home_flow_type=2`）。promo 和 hottopic 不存在这个歧义。修改后重新 `python patch.py` 并安装即可。
 
 两个开关也在这里：`REMOVE_HOME_TABS` 和 `BLOCK_UPDATE`。
 
@@ -107,10 +110,11 @@ BiliDetox/
   tools/
     npatch.jar                      NPatch CLI（已内置）
     NPatchLauncher.java             桌面 JDK 下的 BKS 修复
+    patch_libbili.py                libbili.so 网络探测补丁（含取证记录）
   original/                         放原版 Bilibili APK（git-ignored）
   output/                           打包产物（git-ignored）
   docs/BUILD.md                     构建细节与踩坑记录
-  patch.bat                         一键构建+嵌入
+  patch.py                          一键构建+嵌入（跨平台）
 ```
 
 ## 实现上的两个坑

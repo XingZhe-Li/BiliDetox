@@ -20,7 +20,7 @@ local.properties
 # App build outputs
 /app/build
 
-# NPatchLauncher compiled class (patch.bat regenerates it)
+# NPatchLauncher compiled class (patch.py regenerates it)
 /tools/build/
 
 # Original Bilibili APK is a binary dependency, not source
