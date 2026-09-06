@@ -28,3 +28,6 @@ local.properties
 
 # Patch outputs
 /output/
+
+# androguard analysis db
+/androguard.db
