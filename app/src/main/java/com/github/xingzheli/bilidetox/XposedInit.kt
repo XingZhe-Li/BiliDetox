@@ -2,6 +2,7 @@ package com.github.xingzheli.bilidetox
 
 import com.github.xingzheli.bilidetox.hook.BaseHook
 import com.github.xingzheli.bilidetox.hook.BlockUpdateHook
+import com.github.xingzheli.bilidetox.hook.CommentsHook
 import com.github.xingzheli.bilidetox.hook.HomeTabHook
 import com.github.xingzheli.bilidetox.hook.RelatedVideosHook
 import com.github.xingzheli.bilidetox.hook.SettingsEntryHook
@@ -38,6 +39,7 @@ class XposedInit : IXposedHookLoadPackage {
             BlockUpdateHook(lpparam.classLoader),
             SettingsEntryHook(lpparam.classLoader),
             RelatedVideosHook(lpparam.classLoader),
+            CommentsHook(lpparam.classLoader),
         )
 
         // 逐个 try：一个 hook 失败不应影响其它 hook，更不能让宿主崩溃。
