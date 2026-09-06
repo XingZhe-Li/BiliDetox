@@ -6,12 +6,32 @@
 
 一个面向 Bilibili 安卓客户端的 Xposed 模块，通过 NPatch 直接嵌入目标 APK，不需要 root。
 
-当前功能：
+当前功能（均可在应用内设置页运行时开关）：
 
 - 移除首页顶栏的「推荐」和「热门」Tab
 - 禁用应用内更新检查（启动检查、手动检查、已缓存的强更提示、内部升级埋点）
+- 视频页隐藏「相关推荐」
+- 视频页隐藏评论区
+- 搜索框隐藏自动填充的话题（默认搜索词）
+- 搜索页隐藏「bilibili热搜」「搜索发现」板块
 
 已验证版本：**Bilibili 9.6.0 (versionCode 9060300)**。其他版本需要自行测试——hook 点尽量使用了未混淆的类名和接口方法名，但 B 站随时可能改版。
+
+## 设置入口
+
+打开 B 站 **我的 → 设置**，列表末尾的「**BiliDetox 设置**」即是配置面板：
+所有开关即时保存（JSON 存于 B 站数据目录），回到对应页面后生效，无需重启应用。
+
+各功能的 hook 原理简述（全部来自对 9.6.0 APK 的反编译，详见源码注释）：
+
+| 功能 | hook 点 |
+|---|---|
+| 移除首页 Tab | `MainResourceManager#c` / `HomeFragmentV2#Kf` |
+| 禁用更新 | `UpdateHelper` 四个静态方法 |
+| 隐藏相关推荐 | `IntroRecycleViewService` 初始列表 + 信息流插入 |
+| 隐藏评论区 | `united.di.y#a` 组装 DetailTabs 时移除评论 Tab |
+| 隐藏搜索占位词 | `UpdateSearchDefaultWordAction` 载体置空 |
+| 隐藏热搜/搜索发现 | `search2.discover.p#f` 分发前过滤 square |
 
 ## 它在做什么
 
