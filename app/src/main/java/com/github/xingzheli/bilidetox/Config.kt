@@ -1,19 +1,14 @@
 package com.github.xingzheli.bilidetox
 
 /**
- * 硬编码配置。
+ * 静态常量。
  *
- * 目前没有设置界面，所有开关在这里改。修改后重新编译安装模块即可。
+ * 可在运行时切换的开关已迁移到 [RuntimeConfig]（设置对话框里改），
+ * 这里只保留不随用户变化的常量。
  */
 object Config {
     /** 目标应用包名 */
     const val BILIBILI_PACKAGE = "tv.danmaku.bili"
-
-    /** 是否移除首页顶部的推荐类 Tab */
-    const val REMOVE_HOME_TABS = true
-
-    /** 是否禁用应用内更新检查 */
-    const val BLOCK_UPDATE = true
 
     /**
      * 需要从首页顶栏移除的 Tab uri。

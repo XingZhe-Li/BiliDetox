@@ -2,6 +2,7 @@ package com.github.xingzheli.bilidetox.hook
 
 import com.github.xingzheli.bilidetox.Config
 import com.github.xingzheli.bilidetox.Log
+import com.github.xingzheli.bilidetox.RuntimeConfig
 import com.github.xingzheli.bilidetox.findClassOrNull
 import com.github.xingzheli.bilidetox.findMethodOrNull
 import com.github.xingzheli.bilidetox.findUniqueMethodByNameOrNull
@@ -56,8 +57,6 @@ import de.robv.android.xposed.XposedBridge
 class HomeTabHook(private val classLoader: ClassLoader) : BaseHook {
 
     override val name = "HomeTab"
-
-    override val enabled = Config.REMOVE_HOME_TABS
 
     /**
      * `tv.danmaku.bili.ui.main2.resource.i` —— Tab 模型的接口。
@@ -198,6 +197,8 @@ class HomeTabHook(private val classLoader: ClassLoader) : BaseHook {
     }
 
     private fun filterTabsOrThrow(raw: Any?, tag: String): Any? {
+        // 开关是运行时的：关闭时原样返回，Tab 列表完全不经过滤。
+        if (!RuntimeConfig.get().removeHomeTabs) return raw
         val iface = tabInterface ?: return raw
         val list = raw as? List<*> ?: return raw
         if (list.isEmpty()) return raw
