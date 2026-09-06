@@ -5,6 +5,7 @@ import com.github.xingzheli.bilidetox.hook.BlockUpdateHook
 import com.github.xingzheli.bilidetox.hook.CommentsHook
 import com.github.xingzheli.bilidetox.hook.HomeTabHook
 import com.github.xingzheli.bilidetox.hook.RelatedVideosHook
+import com.github.xingzheli.bilidetox.hook.SearchPlaceholderHook
 import com.github.xingzheli.bilidetox.hook.SettingsEntryHook
 import de.robv.android.xposed.IXposedHookLoadPackage
 import de.robv.android.xposed.callbacks.XC_LoadPackage.LoadPackageParam
@@ -40,6 +41,7 @@ class XposedInit : IXposedHookLoadPackage {
             SettingsEntryHook(lpparam.classLoader),
             RelatedVideosHook(lpparam.classLoader),
             CommentsHook(lpparam.classLoader),
+            SearchPlaceholderHook(lpparam.classLoader),
         )
 
         // 逐个 try：一个 hook 失败不应影响其它 hook，更不能让宿主崩溃。
