@@ -7,6 +7,8 @@ import com.github.xingzheli.bilidetox.hook.HomeTabHook
 import com.github.xingzheli.bilidetox.hook.RelatedVideosHook
 import com.github.xingzheli.bilidetox.hook.SearchPlaceholderHook
 import com.github.xingzheli.bilidetox.hook.SearchSquaresHook
+import com.github.xingzheli.bilidetox.hook.SearchDiagnosticsHook
+import com.github.xingzheli.bilidetox.hook.SearchResultsHook
 import com.github.xingzheli.bilidetox.hook.SettingsEntryHook
 import de.robv.android.xposed.IXposedHookLoadPackage
 import de.robv.android.xposed.callbacks.XC_LoadPackage.LoadPackageParam
@@ -36,7 +38,7 @@ class XposedInit : IXposedHookLoadPackage {
         RuntimeConfig.init(null)
         Log.d("当前配置: ${RuntimeConfig.get()}")
 
-        val hooks = listOf<BaseHook>(
+        val hooks = mutableListOf<BaseHook>(
             HomeTabHook(lpparam.classLoader),
             BlockUpdateHook(lpparam.classLoader),
             SettingsEntryHook(lpparam.classLoader),
@@ -44,7 +46,9 @@ class XposedInit : IXposedHookLoadPackage {
             CommentsHook(lpparam.classLoader),
             SearchPlaceholderHook(lpparam.classLoader),
             SearchSquaresHook(lpparam.classLoader),
+            SearchResultsHook(lpparam.classLoader),
         )
+        if (BuildConfig.SEARCH_DIAGNOSTICS) hooks.add(SearchDiagnosticsHook(lpparam.classLoader))
 
         // 逐个 try：一个 hook 失败不应影响其它 hook，更不能让宿主崩溃。
         for (hook in hooks) {

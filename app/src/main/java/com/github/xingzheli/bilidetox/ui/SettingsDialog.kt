@@ -73,6 +73,7 @@ class SettingsDialog(
             Item("hideComments", "视频页隐藏评论区", "移除详情页的评论 Tab"),
             Item("hideSearchPlaceholder", "搜索框隐藏自动填充话题", "首页搜索框不再显示默认搜索词"),
             Item("hideSearchSquares", "搜索页隐藏热搜/搜索发现", "移除「bilibili热搜」与「搜索发现」板块"),
+            Item("strictSearchResults", "综合搜索关键词过滤", "第一页前10条视频须有命中，不足10条检查全部；通过后仅前5条免过滤"),
         )
 
         val list = LinearLayout(context).apply {
@@ -160,6 +161,7 @@ class SettingsDialog(
         "hideComments" -> c.hideComments
         "hideSearchPlaceholder" -> c.hideSearchPlaceholder
         "hideSearchSquares" -> c.hideSearchSquares
+        "strictSearchResults" -> c.strictSearchResults
         else -> false
     }
 
@@ -170,6 +172,7 @@ class SettingsDialog(
         "hideComments" -> c.copy(hideComments = value)
         "hideSearchPlaceholder" -> c.copy(hideSearchPlaceholder = value)
         "hideSearchSquares" -> c.copy(hideSearchSquares = value)
+        "strictSearchResults" -> c.copy(strictSearchResults = value)
         else -> c
     }
 

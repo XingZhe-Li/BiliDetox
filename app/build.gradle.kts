@@ -14,13 +14,19 @@ android {
         targetSdk = 36
         versionCode = 1
         versionName = "1.0"
+        buildConfigField("boolean", "SEARCH_DIAGNOSTICS", "false")
     }
 
     buildTypes {
+        debug {
+            buildConfigField("boolean", "SEARCH_DIAGNOSTICS", providers.gradleProperty("searchDiagnostics").orElse("false").get())
+        }
         release {
             isMinifyEnabled = false
         }
     }
+
+    buildFeatures { buildConfig = true }
 
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17
@@ -55,4 +61,5 @@ android {
 
 dependencies {
     compileOnly(libs.xposed)
+    implementation("com.huaban:jieba-analysis:1.0.2")
 }

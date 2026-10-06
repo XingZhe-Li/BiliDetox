@@ -22,6 +22,8 @@ data class ConfigData(
     val hideSearchPlaceholder: Boolean = false,
     /** 搜索页隐藏「bilibili热搜」「搜索发现」板块 */
     val hideSearchSquares: Boolean = false,
+    /** 综合搜索按标题、简介、UP 主名称严格匹配 */
+    val strictSearchResults: Boolean = false,
 )
 
 /**
@@ -88,6 +90,9 @@ object RuntimeConfig {
             cached = next
             cachedMtime = f.lastModified()
             Log.d("配置已保存: $next")
+            if (next.strictSearchResults) {
+                com.github.xingzheli.bilidetox.hook.SearchResultsHook.preloadDictionary()
+            }
         } catch (e: Throwable) {
             Log.e("配置保存失败", e)
         }
@@ -103,6 +108,7 @@ object RuntimeConfig {
                 hideComments = obj.optBoolean("hideComments", false),
                 hideSearchPlaceholder = obj.optBoolean("hideSearchPlaceholder", false),
                 hideSearchSquares = obj.optBoolean("hideSearchSquares", false),
+                strictSearchResults = obj.optBoolean("strictSearchResults", false),
             )
         } else {
             ConfigData()
@@ -119,5 +125,6 @@ object RuntimeConfig {
         put("hideComments", c.hideComments)
         put("hideSearchPlaceholder", c.hideSearchPlaceholder)
         put("hideSearchSquares", c.hideSearchSquares)
+        put("strictSearchResults", c.strictSearchResults)
     }.toString()
 }

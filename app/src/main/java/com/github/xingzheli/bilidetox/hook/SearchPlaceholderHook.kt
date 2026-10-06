@@ -118,12 +118,12 @@ class SearchPlaceholderHook(private val classLoader: ClassLoader) : BaseHook {
     /**
      * 最底层的保险：提示词最终都落到具体 View 上——
      * - 首页顶栏：`tv.danmaku.bili:id/search_text`（TextView）
-     * - 搜索页输入框：`tv.danmaku.bili:id/search_src_text`（EditText，
-     *   默认词以 setText 预填，而不是 hint）
-     * hook TextView.setText，按 view id 精确拦截（整数比较，开销可忽略）。
+     * 搜索页 EditText 的 setText 同时用于真实查询，不能在此置空；默认词
+     * 已在 DefaultKeyword 数据源清理。否则 SearchView.setQuery 随后按原词
+     * 长度设置光标，会触发 setSpan 越界。视图层只清首页文案和输入框 hint。
      */
     private fun hookSearchTextView() {
-        val targets = setOf("search_text", "search_src_text")
+        val targets = setOf("search_text")
         var hookedCount = 0
         val overloads = TextView::class.java.declaredMethods.filter {
             it.name == "setText" && it.parameterTypes.size in 1..2 &&
@@ -142,6 +142,7 @@ class SearchPlaceholderHook(private val classLoader: ClassLoader) : BaseHook {
                         if (newWord.isEmpty()) return
                         if (!RuntimeConfig.get().hideSearchPlaceholder) return
                         val view = param.thisObject as? android.widget.TextView ?: return
+                        if (view is android.widget.EditText) return
                         var ids = targetIds
                         if (ids == null) {
                             ids = try {
@@ -154,7 +155,7 @@ class SearchPlaceholderHook(private val classLoader: ClassLoader) : BaseHook {
                                 emptySet()
                             }
                             if (ids.isEmpty()) {
-                                Log.w("未解析到 search_text/search_src_text id，占位词视图过滤未生效")
+                                Log.w("未解析到 search_text id，占位词视图过滤未生效")
                                 return
                             }
                             targetIds = ids
@@ -179,7 +180,7 @@ class SearchPlaceholderHook(private val classLoader: ClassLoader) : BaseHook {
         if (hookedCount == 0) {
             Log.w("未找到 TextView.setText(CharSequence)，占位词视图过滤未生效")
         } else {
-            Log.d("已 hook TextView.setText（${hookedCount} 个重载，按 search_text/search_src_text id 过滤）")
+            Log.d("已 hook TextView.setText（${hookedCount} 个重载，仅首页文案，保留真实查询）")
         }
 
         /** char[] 重载：诊断 + 拦截。 */
@@ -197,6 +198,7 @@ class SearchPlaceholderHook(private val classLoader: ClassLoader) : BaseHook {
                     override fun beforeHookedMethod(param: MethodHookParam) {
                         if (!RuntimeConfig.get().hideSearchPlaceholder) return
                         val view = param.thisObject as? android.widget.TextView ?: return
+                        if (view is android.widget.EditText) return
                         val ids = targetIds ?: resolveIds(view)?.also { targetIds = it }
                         if (ids != null && view.id in ids) {
                             Log.d("已拦截搜索框占位词（视图层/char[]）")
