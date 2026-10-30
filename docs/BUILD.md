@@ -80,12 +80,12 @@ Use `--version-code` to give the patched host an increasing installation version
 keeping its displayed Bilibili version name:
 
 ```sh
-python patch.py --libpatch --version-code 9060313
+python patch.py --libpatch --version-code 9060316
 ```
 
 The time-lock build with secondary settings and a global pledge lock tested on
-2026-10-30 uses `9060312`. When updating that build, choose a larger value, for
-example `9060313`, to avoid a downgrade. This option
+2026-10-30 uses `9060315`. When updating that build, choose a larger value, for
+example `9060316`, to avoid a downgrade. This option
 requires the same NPatch signing key for an in-place upgrade and does not resolve
 a signature conflict with the official app. Without the option, the original host
 versionCode is preserved.

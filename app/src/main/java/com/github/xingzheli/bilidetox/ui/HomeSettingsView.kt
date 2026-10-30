@@ -17,7 +17,7 @@ class HomeSettingsView(private val activity: Activity) : LinearLayout(activity) 
         val config = RuntimeConfig.get()
         val editable = !config.timeLock.isPledged(System.currentTimeMillis())
         addView(TextView(activity).apply {
-            text = "空白首页只显示搜索、关注、个人收藏、浏览历史四个入口，不创建直播或其他信息流页面。关闭空白首页后，下方栏目开关控制原生首页；直播和活动栏目保留原版行为。"
+            text = "导航页提供搜索框，以及关注、离线缓存、历史记录、我的收藏、稍后再看的图标入口，不加载直播或其他信息流。关闭导航页后，下方开关控制原生首页的栏目显示。"
             textSize = 14f
             setPadding(0, dp(8), 0, dp(16))
         })
@@ -26,7 +26,7 @@ class HomeSettingsView(private val activity: Activity) : LinearLayout(activity) 
             textSize = 14f
             setPadding(0, 0, 0, dp(12))
         })
-        row("使用空白首页", "启动时只加载四个快捷入口", config.home.blankHome, editable,
+        row("使用导航页", "搜索框与常用入口，不加载信息流", config.home.blankHome, editable,
             { it.blankHome }) { home, value -> home.copy(blankHome = value) }
         row("显示推荐", "独立控制首页的推荐栏目", config.home.showRecommendation, editable,
             { it.showRecommendation }) { home, value -> home.copy(showRecommendation = value) }
@@ -37,7 +37,7 @@ class HomeSettingsView(private val activity: Activity) : LinearLayout(activity) 
         row("显示影视", "独立控制影视，不影响动画开关", config.home.showCinema, editable,
             { it.showCinema }) { home, value -> home.copy(showCinema = value) }
         addView(TextView(activity).apply {
-            text = "设置即时保存；返回首页时自动重建。栏目设置会保留，关闭空白首页后生效。"
+            text = "设置即时保存；返回首页时自动重建。栏目设置会保留，关闭导航页后生效。"
             textSize = 12f
             alpha = 0.7f
             setPadding(0, dp(12), 0, dp(8))

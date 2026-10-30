@@ -59,7 +59,7 @@ class HomeTabHook(private val classLoader: ClassLoader) : BaseHook {
                     XposedHelpers.setIntField(param.thisObject, "I", 0)
                     val viewModel = XposedHelpers.getObjectField(param.thisObject, "U")
                     if (viewModel != null) XposedHelpers.callMethod(viewModel, "onDefaultTabIndexUpdate", BlankHomePage.URI)
-                    Log.d("空白首页已创建，未装配原生信息流页面")
+                    Log.d("导航页已创建，未装配原生信息流页面")
                 }
                 synchronized(applied) { applied[param.thisObject] = config }
             }

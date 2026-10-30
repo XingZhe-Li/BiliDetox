@@ -162,7 +162,7 @@ class SettingsDialog(
             })
         }
         list.addView(TextView(context).apply {
-            text = "首页管理  ›\n${if (config.home.blankHome) "空白首页 · 四个快捷入口" else "原生首页 · 独立栏目开关"}"
+            text = "首页管理  ›\n${if (config.home.blankHome) "导航页 · 搜索与常用入口" else "原生首页 · 独立栏目开关"}"
             textSize = 16f
             setPadding(0, dp(context, 14), 0, dp(context, 14))
             isFocusable = true
