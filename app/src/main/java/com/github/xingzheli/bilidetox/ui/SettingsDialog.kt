@@ -1,17 +1,28 @@
 package com.github.xingzheli.bilidetox.ui
 
 import android.app.Activity
+import android.app.Dialog
 import android.content.Context
 import android.graphics.Typeface
+import android.os.Handler
+import android.os.Looper
 import android.view.Gravity
+import android.view.KeyEvent
 import android.view.View
+import android.widget.Button
+import android.widget.FrameLayout
 import android.widget.LinearLayout
 import android.widget.ScrollView
 import android.widget.Switch
 import android.widget.TextView
+import android.widget.Toast
 import com.github.xingzheli.bilidetox.ConfigData
 import com.github.xingzheli.bilidetox.Log
 import com.github.xingzheli.bilidetox.RuntimeConfig
+import com.github.xingzheli.bilidetox.TimeLockPolicy
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
 
 /**
  * BiliDetox 设置对话框。
@@ -29,6 +40,23 @@ class SettingsDialog(
     private val activity: Activity,
     private val hostClassLoader: ClassLoader,
 ) {
+    private val content = FrameLayout(activity)
+    private val handler = Handler(Looper.getMainLooper())
+    private var dialog: Dialog? = null
+    private var timeLockPage = false
+    private var displayedConfig: ConfigData? = null
+    private var displayedPledge = false
+    private var displayedRestriction: String? = null
+    private val refresher = object : Runnable {
+        override fun run() {
+            if (dialog?.isShowing != true) return
+            val config = RuntimeConfig.get()
+            val now = System.currentTimeMillis()
+            if (config != displayedConfig || config.timeLock.isPledged(now) != displayedPledge ||
+                TimeLockPolicy.editRestriction(config.timeLock, now) != displayedRestriction) renderPage()
+            handler.postDelayed(this, 1000)
+        }
+    }
 
     /** 界面开关项：key 对应 RuntimeConfig 的 JSON 字段。顺序即展示顺序。 */
     private data class Item(
@@ -41,8 +69,20 @@ class SettingsDialog(
         try {
             val builder = createBuilder()
             invoke(builder, "setTitle", "BiliDetox 设置")
-            invoke(builder, "setView", buildContent(activity))
-            invoke(builder, "show", null)
+            renderPage()
+            invoke(builder, "setView", content)
+            dialog = invoke(builder, "show", null) as Dialog
+            dialog?.setOnKeyListener { _, key, event ->
+                if (key == KeyEvent.KEYCODE_BACK && timeLockPage) {
+                    if (event.action == KeyEvent.ACTION_UP) {
+                        timeLockPage = false
+                        renderPage()
+                    }
+                    true
+                } else false
+            }
+            dialog?.setOnDismissListener { handler.removeCallbacks(refresher) }
+            handler.post(refresher)
         } catch (e: Throwable) {
             Log.e("展示设置对话框失败", e)
         }
@@ -65,7 +105,33 @@ class SettingsDialog(
         return android.app.AlertDialog.Builder(activity)
     }
 
-    private fun buildContent(context: Context): View {
+    private fun renderPage() {
+        val config = RuntimeConfig.get()
+        val now = System.currentTimeMillis()
+        displayedConfig = config
+        displayedPledge = config.timeLock.isPledged(now)
+        displayedRestriction = TimeLockPolicy.editRestriction(config.timeLock, now)
+        dialog?.setTitle(if (timeLockPage) "时段锁" else "BiliDetox 设置")
+        content.removeAllViews()
+        content.addView(if (timeLockPage) buildTimeLockPage() else buildContent(activity, config, displayedPledge))
+    }
+
+    private fun buildTimeLockPage(): View {
+        val list = LinearLayout(activity).apply {
+            orientation = LinearLayout.VERTICAL
+            val pad = dp(activity, 20)
+            setPadding(pad, dp(activity, 8), pad, dp(activity, 12))
+            addView(Button(activity).apply {
+                SettingsTheme.styleButton(this)
+                text = "‹ 返回 BiliDetox 设置"
+                setOnClickListener { timeLockPage = false; renderPage() }
+            })
+            addView(TimeLockSettingsView(activity))
+        }
+        return ScrollView(activity).apply { addView(list) }
+    }
+
+    private fun buildContent(context: Context, config: ConfigData, pledged: Boolean): View {
         val items = listOf(
             Item("removeHomeTabs", "移除首页「推荐」「热门」Tab", "关闭后首页顶栏恢复云端下发"),
             Item("blockUpdate", "禁用应用内更新检查", "屏蔽启动检查、手动检查与强更提示"),
@@ -82,35 +148,44 @@ class SettingsDialog(
             setPadding(pad, dp(context, 8), pad, dp(context, 12))
         }
 
-        val config = RuntimeConfig.get()
+        if (pledged) {
+            list.addView(TextView(context).apply {
+                val until = SimpleDateFormat("yyyy-MM-dd HH:mm", Locale.CHINA).format(Date(config.timeLock.pledgeUntil))
+                text = "发誓锁定至 $until\n所有开关及其他可编辑选项已锁定，仍可浏览设置。"
+                textSize = 14f
+                setPadding(0, dp(context, 8), 0, dp(context, 12))
+            })
+        }
+        list.addView(TextView(context).apply {
+            val lock = config.timeLock
+            text = "时段锁  ›\n${if (lock.enabled) "已启用" else "已禁用"} · 每日 ${lock.periods.size} 个时段"
+            textSize = 16f
+            setPadding(0, dp(context, 14), 0, dp(context, 14))
+            isFocusable = true
+            setOnClickListener { timeLockPage = true; renderPage() }
+        })
         for (item in items) {
-            list.addView(buildRow(context, item, configValue(config, item.key)) { value ->
+            list.addView(buildRow(context, item, configValue(config, item.key), !pledged) { value ->
                 RuntimeConfig.update { c -> withKey(c, item.key, value) }
             })
         }
-
-        val scroll = ScrollView(context).apply {
-            addView(list)
-        }
-        return LinearLayout(context).apply {
-            orientation = LinearLayout.VERTICAL
-            addView(scroll)
-            addView(
-                TextView(context).apply {
-                    text = "改动即时保存；回到相应页面后生效。"
-                    textSize = 12f
-                    alpha = 0.65f
-                    setPadding(dp(context, 24), dp(context, 8), dp(context, 24), dp(context, 12))
-                },
-            )
-        }
+        list.addView(
+            TextView(context).apply {
+                text = "改动即时保存；回到相应页面后生效。发誓锁定期间所有设置均不可修改。"
+                textSize = 12f
+                alpha = 0.65f
+                setPadding(0, dp(context, 8), 0, dp(context, 12))
+            },
+        )
+        return ScrollView(context).apply { addView(list) }
     }
 
     private fun buildRow(
         context: Context,
         item: Item,
         current: Boolean,
-        onChange: (Boolean) -> Unit,
+        editable: Boolean,
+        onChange: (Boolean) -> Boolean,
     ): View {
         val textCol = LinearLayout(context).apply {
             orientation = LinearLayout.VERTICAL
@@ -134,23 +209,36 @@ class SettingsDialog(
             orientation = LinearLayout.HORIZONTAL
             gravity = Gravity.CENTER_VERTICAL
             setPadding(0, dp(context, 10), 0, dp(context, 10))
+            isEnabled = editable
+            alpha = if (editable) 1f else 0.5f
         }
         row.addView(textCol, LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f))
 
         val switch = Switch(context).apply {
             isChecked = current
+            isEnabled = editable
+            contentDescription = item.title
+            var binding = false
             setOnCheckedChangeListener { _, checked ->
+                if (binding) return@setOnCheckedChangeListener
                 try {
-                    onChange(checked)
+                    if (!onChange(checked)) Toast.makeText(context, "保存失败，请重试", Toast.LENGTH_LONG).show()
+                } catch (e: IllegalArgumentException) {
+                    Toast.makeText(context, e.message, Toast.LENGTH_LONG).show()
                 } catch (e: Throwable) {
                     Log.e("保存配置 ${item.key} 失败", e)
+                    Toast.makeText(context, "保存失败，请重试", Toast.LENGTH_LONG).show()
+                } finally {
+                    binding = true
+                    isChecked = configValue(RuntimeConfig.get(), item.key)
+                    binding = false
                 }
             }
         }
         row.addView(switch)
 
         // 点击整行也能切换
-        row.setOnClickListener { switch.toggle() }
+        row.setOnClickListener { if (switch.isEnabled) switch.toggle() }
         return row
     }
 
@@ -181,7 +269,7 @@ class SettingsDialog(
      * setTitle(CharSequence) / setView(View) / show()。
      * [arg] 为 null 表示无参方法（show），否则按参数运行时类型挑选单参重载。
      */
-    private fun invoke(target: Any, method: String, arg: Any?) {
+    private fun invoke(target: Any, method: String, arg: Any?): Any? {
         val candidates = target.javaClass.methods.filter { it.name == method }
         val m = if (arg == null) {
             candidates.firstOrNull { it.parameterTypes.isEmpty() }
@@ -192,7 +280,7 @@ class SettingsDialog(
                 }
         } ?: throw NoSuchMethodException("${target.javaClass.name}#$method")
         m.isAccessible = true
-        m.invoke(target, *(if (arg == null) emptyArray() else arrayOf(arg)))
+        return m.invoke(target, *(if (arg == null) emptyArray() else arrayOf(arg)))
     }
 
     private fun dp(context: Context, v: Int): Int =
