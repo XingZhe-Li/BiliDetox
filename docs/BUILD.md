@@ -73,6 +73,23 @@ adb install -r output/iBiliPlayer-bili-698-npatched.apk
 
 Since NPatch re-signs the APK, any official Bilibili install must be uninstalled first.
 
+### Repeated installs of the same Bilibili version
+
+Some device installers treat a same-version reinstall differently from an upgrade.
+Use `--version-code` to give the patched host an increasing installation version while
+keeping its displayed Bilibili version name:
+
+```sh
+python patch.py --libpatch --version-code 9060306
+```
+
+The time-lock build with secondary settings and a global pledge lock tested on
+2026-10-30 uses `9060305`. When updating that build, choose a larger value, for
+example `9060306`, to avoid a downgrade. This option
+requires the same NPatch signing key for an in-place upgrade and does not resolve
+a signature conflict with the official app. Without the option, the original host
+versionCode is preserved.
+
 ## Key flag: `-l 0`
 
 NPatch defaults to `-l 1` (signature bypass via nested-zip linking). On a PC build environment that path has a bug: failed nested links silently drop all `classes*.dex`, and the output APK lacks `classes.dex`, causing:

@@ -102,14 +102,18 @@ def apply_libbili_patch(orig_apk: Path) -> Path:
     return libpatched
 
 
-def embed_module(npatch_input: Path) -> Path:
+def embed_module(npatch_input: Path, version_code: int = None) -> Path:
     step("NPatch 嵌入模块（-l 0，原因见 docs/BUILD.md）")
     OUT_DIR.mkdir(parents=True, exist_ok=True)
     classpath = f"{NPATCH_JAR}{os.pathsep}{LAUNCHER_OUT}"
-    rc = run([
+    command = [
         "java", "-cp", classpath, "NPatchLauncher",
         npatch_input, "-m", MODULE_APK, "-o", OUT_DIR, "-f", "-l", "0",
-    ])
+    ]
+    if version_code is not None:
+        # NPatch 仅在 --allowdown (-r) 开启时接受自定义 versionCode。
+        command.extend(["-r", "--versioncode", str(version_code)])
+    rc = run(command)
     if rc != 0:
         die("NPatch 失败", rc)
 
@@ -138,7 +142,13 @@ def main() -> int:
         "--libpatch", action="store_true",
         help="对 libbili.so 打网络探测补丁（版本锁定 9.6.0，详见 tools/patch_libbili.py）",
     )
+    parser.add_argument(
+        "--version-code", type=int, default=None,
+        help="指定宿主安装包的 versionCode（1–2100000000），用于需要递增版本号的覆盖安装；默认保留原版值",
+    )
     args = parser.parse_args()
+    if args.version_code is not None and not 1 <= args.version_code <= 2_100_000_000:
+        parser.error("--version-code 必须在 1–2100000000 之间")
 
     global STEP_TOTAL
     STEP_TOTAL = 4 if args.libpatch else 3
@@ -162,7 +172,7 @@ def main() -> int:
     npatch_input = orig_apk
     if args.libpatch:
         npatch_input = apply_libbili_patch(orig_apk)
-    final_apk = embed_module(npatch_input)
+    final_apk = embed_module(npatch_input, args.version_code)
 
     print()
     print(f"完成，用时 {time.monotonic() - started:.0f}s。最终 APK：")
