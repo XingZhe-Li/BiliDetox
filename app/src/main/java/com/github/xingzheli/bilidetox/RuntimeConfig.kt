@@ -1,30 +1,9 @@
 package com.github.xingzheli.bilidetox
 
+import org.json.JSONArray
 import org.json.JSONObject
 import java.io.File
-
-/**
- * 一份配置的不可变快照。
- *
- * 字段默认值 = 未写过配置文件时的行为，其中 removeHomeTabs / blockUpdate
- * 与旧版硬编码 Config 的行为一致，新增功能默认关闭。
- */
-data class ConfigData(
-    /** 移除首页顶栏的「推荐」「热门」Tab */
-    val removeHomeTabs: Boolean = true,
-    /** 禁用应用内更新检查 */
-    val blockUpdate: Boolean = true,
-    /** 视频页隐藏「相关推荐」 */
-    val hideRelatedVideos: Boolean = false,
-    /** 视频页隐藏评论区 */
-    val hideComments: Boolean = false,
-    /** 首页搜索框隐藏自动填充的话题（默认搜索词） */
-    val hideSearchPlaceholder: Boolean = false,
-    /** 搜索页隐藏「bilibili热搜」「搜索发现」板块 */
-    val hideSearchSquares: Boolean = false,
-    /** 综合搜索按标题、简介、UP 主名称严格匹配 */
-    val strictSearchResults: Boolean = false,
-)
+import java.io.FileOutputStream
 
 /**
  * 运行时配置存储。
@@ -81,20 +60,35 @@ object RuntimeConfig {
 
     /** 由设置对话框调用：转换并写盘，随后立即刷新缓存。 */
     @Synchronized
-    fun update(edit: (ConfigData) -> ConfigData) {
-        val f = file ?: return
-        val next = edit(get())
+    fun update(edit: (ConfigData) -> ConfigData): Boolean {
+        val f = file ?: return false
+        val current = get()
+        val proposed = edit(current)
+        val next = ConfigEditPolicy.prepareChange(current, proposed, System.currentTimeMillis())
         try {
             f.parentFile?.mkdirs()
-            f.writeText(toJson(next))
+            // 先完整写入同目录临时文件再原子替换；其他进程不会读到半份 JSON。
+            val pending = File(f.parentFile, "$FILE_NAME.tmp")
+            try {
+                FileOutputStream(pending).use { stream ->
+                    stream.write(toJson(next).toByteArray(Charsets.UTF_8))
+                    stream.fd.sync()
+                }
+                check(pending.renameTo(f)) { "无法替换配置文件" }
+            } catch (e: Throwable) {
+                pending.delete()
+                throw e
+            }
             cached = next
             cachedMtime = f.lastModified()
             Log.d("配置已保存: $next")
             if (next.strictSearchResults) {
                 com.github.xingzheli.bilidetox.hook.SearchResultsHook.preloadDictionary()
             }
+            return true
         } catch (e: Throwable) {
             Log.e("配置保存失败", e)
+            return false
         }
     }
 
@@ -109,6 +103,7 @@ object RuntimeConfig {
                 hideSearchPlaceholder = obj.optBoolean("hideSearchPlaceholder", false),
                 hideSearchSquares = obj.optBoolean("hideSearchSquares", false),
                 strictSearchResults = obj.optBoolean("strictSearchResults", false),
+                timeLock = readTimeLock(obj.optJSONObject("timeLock")),
             )
         } else {
             ConfigData()
@@ -116,6 +111,22 @@ object RuntimeConfig {
     } catch (e: Throwable) {
         Log.e("配置文件解析失败，使用默认配置", e)
         ConfigData()
+    }
+
+    private fun readTimeLock(obj: JSONObject?): TimeLockConfig {
+        if (obj == null) return TimeLockConfig()
+        val array = obj.getJSONArray("periods")
+        val periods = (0 until array.length()).map { index ->
+            val period = array.getJSONObject(index)
+            DailyTimeRange(period.getInt("startMinute"), period.getInt("endMinute"))
+        }
+        TimeLockPolicy.validate(periods)
+        return TimeLockConfig(
+            enabled = obj.optBoolean("enabled", false),
+            periods = periods,
+            editableAfter = obj.optLong("editableAfter", 0),
+            pledgeUntil = obj.optLong("pledgeUntil", 0),
+        )
     }
 
     private fun toJson(c: ConfigData): String = JSONObject().apply {
@@ -126,5 +137,18 @@ object RuntimeConfig {
         put("hideSearchPlaceholder", c.hideSearchPlaceholder)
         put("hideSearchSquares", c.hideSearchSquares)
         put("strictSearchResults", c.strictSearchResults)
+        put("timeLock", JSONObject().apply {
+            put("enabled", c.timeLock.enabled)
+            put("editableAfter", c.timeLock.editableAfter)
+            put("pledgeUntil", c.timeLock.pledgeUntil)
+            put("periods", JSONArray().apply {
+                c.timeLock.periods.forEach { period ->
+                    put(JSONObject().apply {
+                        put("startMinute", period.startMinute)
+                        put("endMinute", period.endMinute)
+                    })
+                }
+            })
+        })
     }.toString()
 }
