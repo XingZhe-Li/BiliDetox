@@ -10,6 +10,7 @@ import com.github.xingzheli.bilidetox.hook.SearchSquaresHook
 import com.github.xingzheli.bilidetox.hook.SearchDiagnosticsHook
 import com.github.xingzheli.bilidetox.hook.SearchResultsHook
 import com.github.xingzheli.bilidetox.hook.SettingsEntryHook
+import com.github.xingzheli.bilidetox.hook.TimeLockHook
 import de.robv.android.xposed.IXposedHookLoadPackage
 import de.robv.android.xposed.callbacks.XC_LoadPackage.LoadPackageParam
 
@@ -23,6 +24,14 @@ class XposedInit : IXposedHookLoadPackage {
     override fun handleLoadPackage(lpparam: LoadPackageParam) {
         if (lpparam.packageName != Config.BILIBILI_PACKAGE) return
 
+        RuntimeConfig.init(lpparam.appInfo?.dataDir)
+        // 时段锁覆盖宿主所有进程里的 Activity（包含独立 web 页面）。
+        try {
+            TimeLockHook().hook()
+        } catch (e: Throwable) {
+            Log.e("TimeLock 安装失败", e)
+        }
+
         // 只在主进程生效。
         //
         // B 站有 :web / :download / :push 等多个子进程，它们不会加载首页，
@@ -32,10 +41,6 @@ class XposedInit : IXposedHookLoadPackage {
 
         Log.d("已注入 ${lpparam.packageName} (${lpparam.processName})")
 
-        // 初始化运行时配置（JSON 放在宿主数据目录，设置对话框直写）。
-        // Xposed api 82 的 LoadPackageParam 没有 appDataDir，主进程数据目录
-        // 固定为 /data/user/0/<pkg>，多用户场景暂不支持。
-        RuntimeConfig.init(null)
         Log.d("当前配置: ${RuntimeConfig.get()}")
 
         val hooks = mutableListOf<BaseHook>(
