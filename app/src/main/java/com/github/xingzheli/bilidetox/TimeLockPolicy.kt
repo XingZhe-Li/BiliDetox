@@ -29,10 +29,10 @@ data class TimeLockConfig(
     val periods: List<DailyTimeRange> = listOf(DailyTimeRange.NIGHT),
     /** 普通锁启用次日的本地零点；还须同时处于可用时段。 */
     val editableAfter: Long = 0,
-    /** 绝对时间戳；到期只解除誓约，不自动关闭每日重复的时段锁。 */
+    /** 全局誓约的绝对时间戳，独立于 enabled；到期不自动关闭每日重复的时段锁。 */
     val pledgeUntil: Long = 0,
 ) {
-    fun isPledged(now: Long): Boolean = enabled && pledgeUntil > now
+    fun isPledged(now: Long): Boolean = pledgeUntil > now
 }
 
 /** 不依赖 Android，设置保存和拦截页面共用同一套规则。 */
@@ -45,8 +45,8 @@ object TimeLockPolicy {
     }
 
     fun editRestriction(config: TimeLockConfig, now: Long, zone: TimeZone = TimeZone.getDefault()): String? = when {
-        !config.enabled -> null
         config.isPledged(now) -> "发誓锁定尚未到期，BiliDetox 的所有设置均不可修改。"
+        !config.enabled -> null
         isBlocked(config, now, zone) -> "时段锁生效中，请等到可用时段再操作。"
         now < config.editableAfter -> "普通锁启用后，最早可在次日的可用时段关闭或修改。"
         else -> null
@@ -68,17 +68,17 @@ object TimeLockPolicy {
     ): TimeLockConfig {
         if (current == proposed) return current
         validate(proposed.periods)
-        // 普通锁在启用当天仍可追加誓约；除此之外按正常编辑限制处理。
-        val addingPledge = current.enabled && !current.isPledged(now) &&
+        // 全局誓约可独立启用，或在普通锁尚不允许修改时追加；不改变时段设置。
+        val addingPledge = !current.isPledged(now) &&
             proposed == current.copy(pledgeUntil = proposed.pledgeUntil) && proposed.pledgeUntil > now
         if (!addingPledge) {
             editRestriction(current, now, zone)?.let { throw IllegalArgumentException(it) }
         }
         if (proposed.pledgeUntil != current.pledgeUntil && proposed.pledgeUntil != 0L) {
-            require(proposed.enabled && proposed.pledgeUntil > now) { "发誓锁定的终止时间必须晚于当前时间" }
+            require(proposed.pledgeUntil > now) { "发誓锁定的终止时间必须晚于当前时间" }
         }
         return when {
-            !proposed.enabled -> proposed.copy(editableAfter = 0, pledgeUntil = 0)
+            !proposed.enabled -> proposed.copy(editableAfter = 0)
             !current.enabled -> proposed.copy(editableAfter = nextDayStart(now, zone))
             else -> proposed.copy(editableAfter = current.editableAfter)
         }

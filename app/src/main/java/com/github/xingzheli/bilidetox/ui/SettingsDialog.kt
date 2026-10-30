@@ -43,7 +43,8 @@ class SettingsDialog(
     private val content = FrameLayout(activity)
     private val handler = Handler(Looper.getMainLooper())
     private var dialog: Dialog? = null
-    private var timeLockPage = false
+    private enum class Page { MAIN, HOME, TIME_LOCK, PLEDGE }
+    private var page = Page.MAIN
     private var displayedConfig: ConfigData? = null
     private var displayedPledge = false
     private var displayedRestriction: String? = null
@@ -73,9 +74,9 @@ class SettingsDialog(
             invoke(builder, "setView", content)
             dialog = invoke(builder, "show", null) as Dialog
             dialog?.setOnKeyListener { _, key, event ->
-                if (key == KeyEvent.KEYCODE_BACK && timeLockPage) {
+                if (key == KeyEvent.KEYCODE_BACK && page != Page.MAIN) {
                     if (event.action == KeyEvent.ACTION_UP) {
-                        timeLockPage = false
+                        page = Page.MAIN
                         renderPage()
                     }
                     true
@@ -102,7 +103,7 @@ class SettingsDialog(
                 // 尝试下一个候选
             }
         }
-        return android.app.AlertDialog.Builder(activity)
+        return android.app.AlertDialog.Builder(SettingsTheme.dialogContext(activity))
     }
 
     private fun renderPage() {
@@ -111,12 +112,17 @@ class SettingsDialog(
         displayedConfig = config
         displayedPledge = config.timeLock.isPledged(now)
         displayedRestriction = TimeLockPolicy.editRestriction(config.timeLock, now)
-        dialog?.setTitle(if (timeLockPage) "时段锁" else "BiliDetox 设置")
+        dialog?.setTitle(when (page) { Page.MAIN -> "BiliDetox 设置"; Page.HOME -> "首页管理"; Page.TIME_LOCK -> "时段锁"; Page.PLEDGE -> "发誓锁" })
         content.removeAllViews()
-        content.addView(if (timeLockPage) buildTimeLockPage() else buildContent(activity, config, displayedPledge))
+        content.addView(when (page) {
+            Page.HOME -> buildSubpage(HomeSettingsView(activity))
+            Page.TIME_LOCK -> buildSubpage(TimeLockSettingsView(activity))
+            Page.PLEDGE -> buildSubpage(PledgeSettingsView(activity))
+            Page.MAIN -> buildContent(activity, config, displayedPledge)
+        })
     }
 
-    private fun buildTimeLockPage(): View {
+    private fun buildSubpage(settings: View): View {
         val list = LinearLayout(activity).apply {
             orientation = LinearLayout.VERTICAL
             val pad = dp(activity, 20)
@@ -124,16 +130,15 @@ class SettingsDialog(
             addView(Button(activity).apply {
                 SettingsTheme.styleButton(this)
                 text = "‹ 返回 BiliDetox 设置"
-                setOnClickListener { timeLockPage = false; renderPage() }
+                setOnClickListener { page = Page.MAIN; renderPage() }
             })
-            addView(TimeLockSettingsView(activity))
+            addView(settings)
         }
         return ScrollView(activity).apply { addView(list) }
     }
 
     private fun buildContent(context: Context, config: ConfigData, pledged: Boolean): View {
         val items = listOf(
-            Item("removeHomeTabs", "移除首页「推荐」「热门」Tab", "关闭后首页顶栏恢复云端下发"),
             Item("blockUpdate", "禁用应用内更新检查", "屏蔽启动检查、手动检查与强更提示"),
             Item("hideRelatedVideos", "视频页隐藏「相关推荐」", "关闭详情页的相关视频列表"),
             Item("hideComments", "视频页隐藏评论区", "移除详情页的评论 Tab"),
@@ -157,12 +162,27 @@ class SettingsDialog(
             })
         }
         list.addView(TextView(context).apply {
+            text = "首页管理  ›\n${if (config.home.blankHome) "空白首页 · 四个快捷入口" else "原生首页 · 独立栏目开关"}"
+            textSize = 16f
+            setPadding(0, dp(context, 14), 0, dp(context, 14))
+            isFocusable = true
+            setOnClickListener { page = Page.HOME; renderPage() }
+        })
+        list.addView(TextView(context).apply {
             val lock = config.timeLock
             text = "时段锁  ›\n${if (lock.enabled) "已启用" else "已禁用"} · 每日 ${lock.periods.size} 个时段"
             textSize = 16f
             setPadding(0, dp(context, 14), 0, dp(context, 14))
             isFocusable = true
-            setOnClickListener { timeLockPage = true; renderPage() }
+            setOnClickListener { page = Page.TIME_LOCK; renderPage() }
+        })
+        list.addView(TextView(context).apply {
+            val until = SimpleDateFormat("yyyy-MM-dd HH:mm", Locale.CHINA).format(Date(config.timeLock.pledgeUntil))
+            text = "发誓锁  ›\n${if (pledged) "锁定至 $until" else "未启用 · 冻结所有设置"}"
+            textSize = 16f
+            setPadding(0, dp(context, 14), 0, dp(context, 14))
+            isFocusable = true
+            setOnClickListener { page = Page.PLEDGE; renderPage() }
         })
         for (item in items) {
             list.addView(buildRow(context, item, configValue(config, item.key), !pledged) { value ->
@@ -189,6 +209,7 @@ class SettingsDialog(
     ): View {
         val textCol = LinearLayout(context).apply {
             orientation = LinearLayout.VERTICAL
+            alpha = if (editable) 1f else 0.5f
         }
         textCol.addView(
             TextView(context).apply {
@@ -210,11 +231,11 @@ class SettingsDialog(
             gravity = Gravity.CENTER_VERTICAL
             setPadding(0, dp(context, 10), 0, dp(context, 10))
             isEnabled = editable
-            alpha = if (editable) 1f else 0.5f
         }
         row.addView(textCol, LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f))
 
         val switch = Switch(context).apply {
+            SettingsTheme.styleSwitch(this)
             isChecked = current
             isEnabled = editable
             contentDescription = item.title
@@ -243,7 +264,6 @@ class SettingsDialog(
     }
 
     private fun configValue(c: ConfigData, key: String): Boolean = when (key) {
-        "removeHomeTabs" -> c.removeHomeTabs
         "blockUpdate" -> c.blockUpdate
         "hideRelatedVideos" -> c.hideRelatedVideos
         "hideComments" -> c.hideComments
@@ -254,7 +274,6 @@ class SettingsDialog(
     }
 
     private fun withKey(c: ConfigData, key: String, value: Boolean): ConfigData = when (key) {
-        "removeHomeTabs" -> c.copy(removeHomeTabs = value)
         "blockUpdate" -> c.copy(blockUpdate = value)
         "hideRelatedVideos" -> c.copy(hideRelatedVideos = value)
         "hideComments" -> c.copy(hideComments = value)

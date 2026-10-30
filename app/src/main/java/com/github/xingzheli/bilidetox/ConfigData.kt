@@ -2,9 +2,9 @@ package com.github.xingzheli.bilidetox
 
 import java.util.TimeZone
 
-/** 配置的不可变快照；未写过配置时仅移除首页推荐/热门及禁用更新。 */
+/** 配置的不可变快照；默认使用空白首页、隐藏推荐/热门及禁用更新。 */
 data class ConfigData(
-    val removeHomeTabs: Boolean = true,
+    val home: HomeConfig = HomeConfig(),
     val blockUpdate: Boolean = true,
     val hideRelatedVideos: Boolean = false,
     val hideComments: Boolean = false,

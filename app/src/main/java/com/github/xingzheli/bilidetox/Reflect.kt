@@ -1,6 +1,5 @@
 package com.github.xingzheli.bilidetox
 
-import android.net.Uri
 import java.lang.reflect.Field
 import java.lang.reflect.Method
 
@@ -58,24 +57,4 @@ fun Class<*>.findFieldOrNull(name: String): Field? = try {
 } catch (e: Throwable) {
     Log.e("查找字段 ${this.name}#$name 时出现异常", e)
     null
-}
-
-/**
- * 判断两个 bilibili scheme 是否指向同一页面：忽略 query 与 fragment，只比较
- * scheme + host + path。
- *
- * 需要这样比较的原因：影视 Tab 的 uri 是 "bilibili://pgc/home?home_flow_type=2"，
- * 与番剧的 "bilibili://pgc/home" 仅 query 不同；而推荐 Tab 在部分渠道包里会带上
- * 额外的埋点 query。直接做字符串相等会漏判。
- */
-fun uriMatches(actual: String?, expected: String): Boolean {
-    if (actual.isNullOrEmpty()) return false
-    if (actual == expected) return true
-    return try {
-        val a = Uri.parse(actual)
-        val b = Uri.parse(expected)
-        a.scheme == b.scheme && a.host == b.host && a.path.orEmpty() == b.path.orEmpty()
-    } catch (_: Throwable) {
-        false
-    }
 }

@@ -8,7 +8,11 @@ fun main() {
     val zone = TimeZone.getTimeZone("Asia/Shanghai")
     val pledged = ConfigData(timeLock = TimeLockConfig(enabled = true, editableAfter = until + 60_000, pledgeUntil = until))
     val edits: List<Pair<String, (ConfigData) -> ConfigData>> = listOf(
-        "removeHomeTabs" to { it.copy(removeHomeTabs = !it.removeHomeTabs) },
+        "home.blankHome" to { it.copy(home = it.home.copy(blankHome = !it.home.blankHome)) },
+        "home.showRecommendation" to { it.copy(home = it.home.copy(showRecommendation = !it.home.showRecommendation)) },
+        "home.showPopular" to { it.copy(home = it.home.copy(showPopular = !it.home.showPopular)) },
+        "home.showAnimation" to { it.copy(home = it.home.copy(showAnimation = !it.home.showAnimation)) },
+        "home.showCinema" to { it.copy(home = it.home.copy(showCinema = !it.home.showCinema)) },
         "blockUpdate" to { it.copy(blockUpdate = !it.blockUpdate) },
         "hideRelatedVideos" to { it.copy(hideRelatedVideos = !it.hideRelatedVideos) },
         "hideComments" to { it.copy(hideComments = !it.hideComments) },
@@ -24,6 +28,8 @@ fun main() {
         rejects(pledged, edit(pledged))
         val opposite = edit(pledged)
         rejects(opposite, edit(opposite)) // 原先开启或关闭的开关都不可修改。
+        val independent = pledged.copy(timeLock = pledged.timeLock.copy(enabled = false))
+        rejects(independent, edit(independent)) // 无需启用时段锁，全局誓约仍冻结每个开关。
         check(ConfigEditPolicy.prepareChange(pledged, edit(pledged), until, zone) == edit(pledged)) { "$name must unlock at expiry" }
         val ordinary = pledged.copy(timeLock = pledged.timeLock.copy(pledgeUntil = 0))
         check(ConfigEditPolicy.prepareChange(ordinary, edit(ordinary), now, zone) == edit(ordinary)) { "ordinary lock must not freeze $name" }
@@ -39,5 +45,5 @@ fun main() {
     val saved = ConfigEditPolicy.prepareChange(off, activating, now, zone)
     check(saved.hideComments && saved.timeLock.isPledged(now))
     rejects(saved, saved.copy(hideComments = false))
-    println("ConfigEditPolicy: all seven switches, both directions, expiry, ordinary-lock scope and atomic bypass checks passed")
+    println("ConfigEditPolicy: all home and feature switches, both directions, expiry and atomic bypass checks passed")
 }

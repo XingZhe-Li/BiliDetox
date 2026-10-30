@@ -52,6 +52,14 @@ fun main() {
     check(startWithPledge.isPledged(time("2026-10-31 12:00:00")))
     check(!blocked(startWithPledge, "2026-10-31 12:00:00"))
     check(blocked(startWithPledge, "2026-11-03 23:30:00")) // 誓约到期不会关闭每日锁。
+    val independent = TimeLockPolicy.prepareChange(off, off.copy(pledgeUntil = time("2026-11-02 12:00:00")), time("2026-10-30 12:00:00"), zone)
+    check(!independent.enabled && independent.editableAfter == 0L)
+    check(independent.isPledged(time("2026-10-31 12:00:00")))
+    check(!blocked(independent, "2026-10-31 23:30:00"))
+    check(TimeLockPolicy.editRestriction(independent, time("2026-10-31 12:00:00"), zone) != null)
+    rejected { TimeLockPolicy.prepareChange(independent, independent.copy(enabled = true), time("2026-10-31 12:00:00"), zone) }
+    rejected { TimeLockPolicy.prepareChange(independent, off, time("2026-10-31 12:00:00"), zone) }
+    check(TimeLockPolicy.editRestriction(independent, time("2026-11-02 12:00:00"), zone) == null)
     val ny = TimeZone.getTimeZone("America/New_York")
     val dst = TimeLockPolicy.prepareChange(off, night, time("2026-03-08 00:30:00", ny), ny)
     check(dst.editableAfter == time("2026-03-09 00:00:00", ny)) // 不是固定加 24 小时。

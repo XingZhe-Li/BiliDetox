@@ -8,7 +8,7 @@
 
 当前功能（均可在应用内设置页运行时开关）：
 
-- 移除首页顶栏的「推荐」和「热门」Tab
+- 首页管理：推荐、热门、动画、影视独立开关；默认使用带搜索、关注、个人收藏、浏览历史入口的空白首页
 - 禁用应用内更新检查（启动检查、手动检查、已缓存的强更提示、内部升级埋点）
 - 视频页隐藏「相关推荐」
 - 视频页隐藏评论区
@@ -26,11 +26,12 @@
 
 各功能的 hook 原理简述（B 站特定 hook 基于 9.6.0 APK 的反编译，时段锁使用 Android 生命周期与媒体会话入口，详见源码注释）：
 
-时段锁的规则、发誓锁定及测试方式见 [时段锁说明](docs/TIME_LOCK.md)。时段锁使用独立次级设置页。普通锁启用当天不能关闭，次日可在可用时段关闭；发誓锁定到期前，BiliDetox 的所有开关及其他可编辑选项都不能修改，到期后每日时段锁仍继续生效。
+时段锁的规则、发誓锁定及测试方式见 [时段锁说明](docs/TIME_LOCK.md)。时段锁、发誓锁各有独立二级设置页。普通锁启用当天不能关闭，次日可在可用时段关闭；发誓锁可独立冻结全部设置，不自动启用时段锁。发誓锁定到期前，BiliDetox 的所有开关及其他可编辑选项都不能修改，到期后已启用的每日时段锁仍继续生效。
 
 | 功能 | hook 点 |
 |---|---|
-| 移除首页 Tab | `MainResourceManager#c` / `HomeFragmentV2#Kf` |
+| 首页栏目显示 | `HomeFragmentV2#Kf` 最终装配前过滤，保留完整云端缓存 |
+| 空白首页 | 在 `HomeFragmentV2#Kf` 创建分页前替换为宿主基础 Fragment，只创建快捷入口 |
 | 禁用更新 | `UpdateHelper` 四个静态方法 |
 | 隐藏相关推荐 | `IntroRecycleViewService` 初始列表 + 信息流插入 |
 | 隐藏评论区 | `united.di.y#a` 组装 DetailTabs 时移除评论 Tab |
@@ -42,15 +43,11 @@
 
 ## 它在做什么
 
-B 站首页顶栏的 Tab 列表在运行时由 `tv.danmaku.bili.ui.main2.resource.MainResourceManager` 生成，包含云端下发和硬编码兜底两条路径。模块 hook 了这条数据流上的两个收敛点：
+B 站首页顶栏的 Tab 列表由 `tv.danmaku.bili.ui.main2.resource.MainResourceManager` 提供，包含云端下发和硬编码兜底两条路径。模块保留完整缓存，仅在 `HomeFragmentV2#Kf(List)` 真正构建页面前选择首页模式，覆盖所有兜底路径。
 
-1. `MainResourceManager#c(int, List)` —— 云端数据的入口，在返回时过滤掉目标 Tab
-2. `HomeFragmentV2#Kf(List)` —— 真正构建 Fragment 页面前的总闸，覆盖所有兜底路径
-
-过滤时做了两件事：
-
-- **保留至少一个 Tab**。B 站在 Tab 列表为空时会判定数据无效、回退到硬编码兜底，推荐 Tab 反而会重新出现。
-- **转移默认选中标记**。推荐 Tab 原本是 `defaultSelected`，删除后若无人接手，初始选中状态会异常。
+- **空白模式**只装配一个带四个快捷入口的基础 Fragment，不创建直播和其他信息流分页，避免相邻分页预加载视频流。
+- **原生模式**按独立开关过滤推荐、热门、动画、影视。复制模型后转移默认选中标记，避免污染共享缓存；重新开启栏目时仍能从缓存恢复。
+- **空列表兜底**使用同一个空白页，不触发宿主回退到包含推荐的原版首页。
 
 更新禁用直接替换四个未混淆的 `UpdateHelper` 静态方法，让它们立即返回。
 
@@ -100,37 +97,23 @@ adb logcat -s BiliDetox:V
 
 ```
 BiliDetox: 已注入 tv.danmaku.bili (tv.danmaku.bili)
-BiliDetox: 已 hook MainResourceManager#c
-BiliDetox: 已 hook HomeFragmentV2#Kf
+BiliDetox: 已安装首页管理：空白模式与独立栏目开关
 BiliDetox: 禁用更新：已拦截 4 个方法
-BiliDetox: [MainResourceManager#c] 已移除 2 个 Tab: [bilibili://pegasus/promo, bilibili://pegasus/hottopic]，剩余 N 个
+BiliDetox: 空白首页已创建，未装配原生信息流页面
 ```
 
-## 改要移除哪些 Tab
+## 首页管理
 
-目前没有设置界面，所有开关硬编码在
-[`app/src/main/java/com/github/xingzheli/bilidetox/Config.kt`](app/src/main/java/com/github/xingzheli/bilidetox/Config.kt)。
+进入 **我的 → 设置 → BiliDetox 设置 → 首页管理**。默认空白首页只创建四个快捷入口，不创建直播等信息流页面。关闭空白首页后，可以分别控制推荐、热门、动画、影视的显示；直播和活动栏目保留原版行为。动画与影视按 `home_flow_type` 参数区分，互不影响。
 
-`REMOVED_TAB_URIS` 可选值（来自 9.6.0 的硬编码兜底列表）：
-
-| URI | Tab |
-|---|---|
-| `bilibili://pegasus/promo` | 推荐（默认选中页） |
-| `bilibili://pegasus/hottopic` | 热门 |
-| `bilibili://live/home` | 直播 |
-| `bilibili://pgc/home` | 番剧 |
-| `bilibili://pgc/home?home_flow_type=2` | 影视 |
-
-注意：uri 匹配忽略 query，所以 `bilibili://pgc/home` 会同时命中番剧和影视（影视只多了 `?home_flow_type=2`）。promo 和 hottopic 不存在这个歧义。修改后重新 `python patch.py` 并安装即可。
-
-两个开关也在这里：`REMOVE_HOME_TABS` 和 `BLOCK_UPDATE`。
+旧的「移除推荐/热门」开关自动迁移为两个独立选项。更改即时保存，返回首页时重建页面；启用发誓锁定后，这些选项也不可修改。规则、实现和验证方式见 [首页管理说明](docs/HOME_MANAGEMENT.md)。
 
 ## 项目结构
 
 ```
 BiliDetox/
   app/                              模块源码
-    src/main/java/.../Config.kt     硬编码开关
+    src/main/java/.../HomeConfig.kt 首页模式与栏目规则
     src/main/java/.../XposedInit.kt 模块入口
     src/main/java/.../hook/         各 hook 实现
     src/main/assets/xposed_init     Xposed 入口声明

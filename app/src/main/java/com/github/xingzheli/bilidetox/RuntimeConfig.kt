@@ -96,7 +96,7 @@ object RuntimeConfig {
         if (f.exists()) {
             val obj = JSONObject(f.readText())
             ConfigData(
-                removeHomeTabs = obj.optBoolean("removeHomeTabs", true),
+                home = readHome(obj),
                 blockUpdate = obj.optBoolean("blockUpdate", true),
                 hideRelatedVideos = obj.optBoolean("hideRelatedVideos", false),
                 hideComments = obj.optBoolean("hideComments", false),
@@ -129,8 +129,26 @@ object RuntimeConfig {
         )
     }
 
+    private fun readHome(root: JSONObject): HomeConfig {
+        val legacy = HomeConfig.fromLegacy(root.optBoolean("removeHomeTabs", true))
+        val obj = root.optJSONObject("home") ?: return legacy
+        return HomeConfig(
+            blankHome = obj.optBoolean("blankHome", true),
+            showRecommendation = obj.optBoolean("showRecommendation", legacy.showRecommendation),
+            showPopular = obj.optBoolean("showPopular", legacy.showPopular),
+            showAnimation = obj.optBoolean("showAnimation", true),
+            showCinema = obj.optBoolean("showCinema", true),
+        )
+    }
+
     private fun toJson(c: ConfigData): String = JSONObject().apply {
-        put("removeHomeTabs", c.removeHomeTabs)
+        put("home", JSONObject().apply {
+            put("blankHome", c.home.blankHome)
+            put("showRecommendation", c.home.showRecommendation)
+            put("showPopular", c.home.showPopular)
+            put("showAnimation", c.home.showAnimation)
+            put("showCinema", c.home.showCinema)
+        })
         put("blockUpdate", c.blockUpdate)
         put("hideRelatedVideos", c.hideRelatedVideos)
         put("hideComments", c.hideComments)
