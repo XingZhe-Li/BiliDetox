@@ -32,6 +32,8 @@ class HomeSettingsView(private val activity: Activity) : LinearLayout(activity) 
             { it.showRecommendation }) { home, value -> home.copy(showRecommendation = value) }
         row("显示热门", "独立控制首页的热门栏目", config.home.showPopular, editable,
             { it.showPopular }) { home, value -> home.copy(showPopular = value) }
+        row("显示直播", "关闭后不创建首页直播分页", config.home.showLive, editable,
+            { it.showLive }) { home, value -> home.copy(showLive = value) }
         row("显示动画", "包含原生动画／番剧栏目", config.home.showAnimation, editable,
             { it.showAnimation }) { home, value -> home.copy(showAnimation = value) }
         row("显示影视", "独立控制影视，不影响动画开关", config.home.showCinema, editable,

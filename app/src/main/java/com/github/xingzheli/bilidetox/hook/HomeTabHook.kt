@@ -28,6 +28,10 @@ class HomeTabHook(private val classLoader: ClassLoader) : BaseHook {
 
         fun filter(raw: Any?, config: HomeConfig): Any? {
             val list = raw as? List<*> ?: return raw
+            Log.d("首页栏目识别：" + list.filter { iface.isInstance(it) }.joinToString { item ->
+                val uri = getUri.invoke(item) as? String
+                "${HomeTabPolicy.kind(uri)}=${uri?.substringBefore('?')}(${if (HomeTabPolicy.shouldShow(config, uri)) "显示" else "隐藏"})"
+            })
             val kept = list.filter { !iface.isInstance(it) || HomeTabPolicy.shouldShow(config, getUri.invoke(it) as? String) }
                 .map { item ->
                     // 模型来自共享缓存；复制后再规范默认选中标记，避免污染切换后的原始列表。

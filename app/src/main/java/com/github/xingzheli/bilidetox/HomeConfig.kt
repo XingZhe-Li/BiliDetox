@@ -7,6 +7,7 @@ data class HomeConfig(
     val blankHome: Boolean = true,
     val showRecommendation: Boolean = false,
     val showPopular: Boolean = false,
+    val showLive: Boolean = true,
     val showAnimation: Boolean = true,
     val showCinema: Boolean = true,
 ) {
@@ -19,9 +20,9 @@ data class HomeConfig(
     }
 }
 
-/** 区分动画与影视时保留 home_flow_type；其他埋点参数不影响匹配。 */
+/** 覆盖 9.6.0 的新旧栏目地址；旧 pgc/home 仍通过 home_flow_type 区分动画和影视。 */
 object HomeTabPolicy {
-    enum class Kind { RECOMMENDATION, POPULAR, ANIMATION, CINEMA, OTHER }
+    enum class Kind { RECOMMENDATION, POPULAR, LIVE, ANIMATION, CINEMA, OTHER }
 
     fun kind(value: String?): Kind = try {
         val uri = URI(value ?: "")
@@ -29,6 +30,9 @@ object HomeTabPolicy {
         if (!uri.scheme.equals("bilibili", ignoreCase = true)) Kind.OTHER else when (target) {
             "pegasus/promo" -> Kind.RECOMMENDATION
             "pegasus/hottopic" -> Kind.POPULAR
+            "live/home" -> Kind.LIVE
+            "pgc/bangumi_v2" -> Kind.ANIMATION
+            "pgc/cinema-tab", "pgc/cinema_v2" -> Kind.CINEMA
             "pgc/home" -> {
                 val flow = uri.rawQuery.orEmpty().split('&').map { it.split('=', limit = 2) }
                     .firstOrNull { URLDecoder.decode(it[0], "UTF-8") == "home_flow_type" }
@@ -42,6 +46,7 @@ object HomeTabPolicy {
     fun shouldShow(config: HomeConfig, uri: String?): Boolean = when (kind(uri)) {
         Kind.RECOMMENDATION -> config.showRecommendation
         Kind.POPULAR -> config.showPopular
+        Kind.LIVE -> config.showLive
         Kind.ANIMATION -> config.showAnimation
         Kind.CINEMA -> config.showCinema
         Kind.OTHER -> true

@@ -136,6 +136,7 @@ object RuntimeConfig {
             blankHome = obj.optBoolean("blankHome", true),
             showRecommendation = obj.optBoolean("showRecommendation", legacy.showRecommendation),
             showPopular = obj.optBoolean("showPopular", legacy.showPopular),
+            showLive = obj.optBoolean("showLive", true),
             showAnimation = obj.optBoolean("showAnimation", true),
             showCinema = obj.optBoolean("showCinema", true),
         )
@@ -146,6 +147,7 @@ object RuntimeConfig {
             put("blankHome", c.home.blankHome)
             put("showRecommendation", c.home.showRecommendation)
             put("showPopular", c.home.showPopular)
+            put("showLive", c.home.showLive)
             put("showAnimation", c.home.showAnimation)
             put("showCinema", c.home.showCinema)
         })

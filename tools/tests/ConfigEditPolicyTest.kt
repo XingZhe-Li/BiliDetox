@@ -11,6 +11,7 @@ fun main() {
         "home.blankHome" to { it.copy(home = it.home.copy(blankHome = !it.home.blankHome)) },
         "home.showRecommendation" to { it.copy(home = it.home.copy(showRecommendation = !it.home.showRecommendation)) },
         "home.showPopular" to { it.copy(home = it.home.copy(showPopular = !it.home.showPopular)) },
+        "home.showLive" to { it.copy(home = it.home.copy(showLive = !it.home.showLive)) },
         "home.showAnimation" to { it.copy(home = it.home.copy(showAnimation = !it.home.showAnimation)) },
         "home.showCinema" to { it.copy(home = it.home.copy(showCinema = !it.home.showCinema)) },
         "blockUpdate" to { it.copy(blockUpdate = !it.blockUpdate) },
