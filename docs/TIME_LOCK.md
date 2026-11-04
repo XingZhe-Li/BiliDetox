@@ -34,7 +34,7 @@
 ```sh
 kotlinc app/src/main/java/com/github/xingzheli/bilidetox/TimeLockPolicy.kt tools/tests/TimeLockPolicyTest.kt -include-runtime -d tools/build/time-lock-tests.jar
 java -jar tools/build/time-lock-tests.jar
-kotlinc app/src/main/java/com/github/xingzheli/bilidetox/HomeConfig.kt app/src/main/java/com/github/xingzheli/bilidetox/TimeLockPolicy.kt app/src/main/java/com/github/xingzheli/bilidetox/ConfigData.kt tools/tests/ConfigEditPolicyTest.kt -include-runtime -d tools/build/config-edit-tests.jar
+kotlinc app/src/main/java/com/github/xingzheli/bilidetox/HomeConfig.kt app/src/main/java/com/github/xingzheli/bilidetox/TimeLockPolicy.kt app/src/main/java/com/github/xingzheli/bilidetox/PurifyConfig.kt app/src/main/java/com/github/xingzheli/bilidetox/ConfigData.kt tools/tests/ConfigEditPolicyTest.kt -include-runtime -d tools/build/config-edit-tests.jar
 java -jar tools/build/config-edit-tests.jar
 ```
 

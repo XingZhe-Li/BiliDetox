@@ -42,7 +42,7 @@
 ## 规则测试
 
 ```sh
-kotlinc app/src/main/java/com/github/xingzheli/bilidetox/HomeConfig.kt app/src/main/java/com/github/xingzheli/bilidetox/TimeLockPolicy.kt app/src/main/java/com/github/xingzheli/bilidetox/ConfigData.kt tools/tests/HomeTabPolicyTest.kt tools/tests/ConfigEditPolicyTest.kt tools/tests/TimeLockPolicyTest.kt -include-runtime -d tools/build/home-lock-policy-tests.jar
+kotlinc app/src/main/java/com/github/xingzheli/bilidetox/HomeConfig.kt app/src/main/java/com/github/xingzheli/bilidetox/TimeLockPolicy.kt app/src/main/java/com/github/xingzheli/bilidetox/PurifyConfig.kt app/src/main/java/com/github/xingzheli/bilidetox/ConfigData.kt tools/tests/HomeTabPolicyTest.kt tools/tests/ConfigEditPolicyTest.kt tools/tests/TimeLockPolicyTest.kt -include-runtime -d tools/build/home-lock-policy-tests.jar
 java -cp tools/build/home-lock-policy-tests.jar HomeTabPolicyTestKt
 java -cp tools/build/home-lock-policy-tests.jar ConfigEditPolicyTestKt
 java -cp tools/build/home-lock-policy-tests.jar TimeLockPolicyTestKt

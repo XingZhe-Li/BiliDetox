@@ -52,7 +52,7 @@
 1. 策略层离线测试（本机已具备的能力）：
 
    ```sh
-   kotlinc app/src/main/java/com/github/xingzheli/bilidetox/HomeConfig.kt app/src/main/java/com/github/xingzheli/bilidetox/TimeLockPolicy.kt app/src/main/java/com/github/xingzheli/bilidetox/ConfigData.kt app/src/main/java/com/github/xingzheli/bilidetox/hook/PlayerRecommendationsPolicy.kt tools/tests/PlayerRecommendationsPolicyTest.kt -include-runtime -d tools/build/player-recommend-policy-tests.jar
+   kotlinc app/src/main/java/com/github/xingzheli/bilidetox/HomeConfig.kt app/src/main/java/com/github/xingzheli/bilidetox/TimeLockPolicy.kt app/src/main/java/com/github/xingzheli/bilidetox/PurifyConfig.kt app/src/main/java/com/github/xingzheli/bilidetox/ConfigData.kt app/src/main/java/com/github/xingzheli/bilidetox/hook/PlayerRecommendationsPolicy.kt tools/tests/PlayerRecommendationsPolicyTest.kt -include-runtime -d tools/build/player-recommend-policy-tests.jar
    java -cp tools/build/player-recommend-policy-tests.jar PlayerRecommendationsPolicyTestKt
    ```
 
