@@ -4,6 +4,7 @@ import com.github.xingzheli.bilidetox.hook.BaseHook
 import com.github.xingzheli.bilidetox.hook.BlockUpdateHook
 import com.github.xingzheli.bilidetox.hook.CommentsHook
 import com.github.xingzheli.bilidetox.hook.HomeTabHook
+import com.github.xingzheli.bilidetox.hook.PlayerRecommendationsHook
 import com.github.xingzheli.bilidetox.hook.RelatedVideosHook
 import com.github.xingzheli.bilidetox.hook.SearchPlaceholderHook
 import com.github.xingzheli.bilidetox.hook.SearchSquaresHook
@@ -48,6 +49,7 @@ class XposedInit : IXposedHookLoadPackage {
             BlockUpdateHook(lpparam.classLoader),
             SettingsEntryHook(lpparam.classLoader),
             RelatedVideosHook(lpparam.classLoader),
+            PlayerRecommendationsHook(lpparam.classLoader),
             CommentsHook(lpparam.classLoader),
             SearchPlaceholderHook(lpparam.classLoader),
             SearchSquaresHook(lpparam.classLoader),
