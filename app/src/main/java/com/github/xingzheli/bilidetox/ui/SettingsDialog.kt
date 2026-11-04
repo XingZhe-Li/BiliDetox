@@ -140,7 +140,7 @@ class SettingsDialog(
     private fun buildContent(context: Context, config: ConfigData, pledged: Boolean): View {
         val items = listOf(
             Item("blockUpdate", "禁用应用内更新检查", "屏蔽启动检查、手动检查与强更提示"),
-            Item("hideRelatedVideos", "视频页隐藏「相关推荐」", "关闭详情页的相关视频列表"),
+            Item("hideRelatedVideos", "视频页隐藏「相关推荐」", "移除详情页推荐列表与全屏播放器右侧推荐拉条"),
             Item("hideComments", "视频页隐藏评论区", "移除详情页的评论 Tab"),
             Item("hideSearchPlaceholder", "搜索框隐藏自动填充话题", "首页搜索框不再显示默认搜索词"),
             Item("hideSearchSquares", "搜索页隐藏热搜/搜索发现", "移除「bilibili热搜」与「搜索发现」板块"),
