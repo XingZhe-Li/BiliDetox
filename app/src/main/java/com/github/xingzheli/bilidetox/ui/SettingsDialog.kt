@@ -43,7 +43,7 @@ class SettingsDialog(
     private val content = FrameLayout(activity)
     private val handler = Handler(Looper.getMainLooper())
     private var dialog: Dialog? = null
-    private enum class Page { MAIN, HOME, TIME_LOCK, PLEDGE }
+    private enum class Page { MAIN, HOME, PURIFY, TIME_LOCK, PLEDGE }
     private var page = Page.MAIN
     private var displayedConfig: ConfigData? = null
     private var displayedPledge = false
@@ -112,10 +112,17 @@ class SettingsDialog(
         displayedConfig = config
         displayedPledge = config.timeLock.isPledged(now)
         displayedRestriction = TimeLockPolicy.editRestriction(config.timeLock, now)
-        dialog?.setTitle(when (page) { Page.MAIN -> "BiliDetox 设置"; Page.HOME -> "首页管理"; Page.TIME_LOCK -> "时段锁"; Page.PLEDGE -> "发誓锁" })
+        dialog?.setTitle(when (page) {
+            Page.MAIN -> "BiliDetox 设置"
+            Page.HOME -> "首页管理"
+            Page.PURIFY -> "净化管理"
+            Page.TIME_LOCK -> "时段锁"
+            Page.PLEDGE -> "发誓锁"
+        })
         content.removeAllViews()
         content.addView(when (page) {
             Page.HOME -> buildSubpage(HomeSettingsView(activity))
+            Page.PURIFY -> buildSubpage(PurifySettingsView(activity))
             Page.TIME_LOCK -> buildSubpage(TimeLockSettingsView(activity))
             Page.PLEDGE -> buildSubpage(PledgeSettingsView(activity))
             Page.MAIN -> buildContent(activity, config, displayedPledge)
@@ -167,6 +174,13 @@ class SettingsDialog(
             setPadding(0, dp(context, 14), 0, dp(context, 14))
             isFocusable = true
             setOnClickListener { page = Page.HOME; renderPage() }
+        })
+        list.addView(TextView(context).apply {
+            text = "净化管理  ›\n${if (config.purify.blockVideoDetailAdPanel) "详情页广告面板已拦截" else "详情页广告面板未拦截"}"
+            textSize = 16f
+            setPadding(0, dp(context, 14), 0, dp(context, 14))
+            isFocusable = true
+            setOnClickListener { page = Page.PURIFY; renderPage() }
         })
         list.addView(TextView(context).apply {
             val lock = config.timeLock

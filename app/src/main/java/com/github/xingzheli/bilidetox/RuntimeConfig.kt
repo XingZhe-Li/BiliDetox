@@ -103,6 +103,7 @@ object RuntimeConfig {
                 hideSearchPlaceholder = obj.optBoolean("hideSearchPlaceholder", false),
                 hideSearchSquares = obj.optBoolean("hideSearchSquares", false),
                 strictSearchResults = obj.optBoolean("strictSearchResults", false),
+                purify = readPurify(obj.optJSONObject("purify")),
                 timeLock = readTimeLock(obj.optJSONObject("timeLock")),
             )
         } else {
@@ -112,6 +113,11 @@ object RuntimeConfig {
         Log.e("配置文件解析失败，使用默认配置", e)
         ConfigData()
     }
+
+    /** 老配置没有 purify 节点时按默认（开启）处理，避免升级后突然出现广告。 */
+    private fun readPurify(obj: JSONObject?): PurifyConfig = PurifyConfig(
+        blockVideoDetailAdPanel = obj?.optBoolean("blockVideoDetailAdPanel", true) ?: true,
+    )
 
     private fun readTimeLock(obj: JSONObject?): TimeLockConfig {
         if (obj == null) return TimeLockConfig()
@@ -157,6 +163,9 @@ object RuntimeConfig {
         put("hideSearchPlaceholder", c.hideSearchPlaceholder)
         put("hideSearchSquares", c.hideSearchSquares)
         put("strictSearchResults", c.strictSearchResults)
+        put("purify", JSONObject().apply {
+            put("blockVideoDetailAdPanel", c.purify.blockVideoDetailAdPanel)
+        })
         put("timeLock", JSONObject().apply {
             put("enabled", c.timeLock.enabled)
             put("editableAfter", c.timeLock.editableAfter)

@@ -11,6 +11,7 @@ data class ConfigData(
     val hideSearchPlaceholder: Boolean = false,
     val hideSearchSquares: Boolean = false,
     val strictSearchResults: Boolean = false,
+    val purify: PurifyConfig = PurifyConfig(),
     val timeLock: TimeLockConfig = TimeLockConfig(),
 )
 
