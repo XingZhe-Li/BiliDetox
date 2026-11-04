@@ -20,6 +20,8 @@ fun main() {
         "hideSearchPlaceholder" to { it.copy(hideSearchPlaceholder = !it.hideSearchPlaceholder) },
         "hideSearchSquares" to { it.copy(hideSearchSquares = !it.hideSearchSquares) },
         "strictSearchResults" to { it.copy(strictSearchResults = !it.strictSearchResults) },
+        "purify.blockVideoDetailAdPanel" to
+            { it.copy(purify = it.purify.copy(blockVideoDetailAdPanel = !it.purify.blockVideoDetailAdPanel)) },
     )
     fun rejects(current: ConfigData, next: ConfigData) {
         val error = runCatching { ConfigEditPolicy.prepareChange(current, next, now, zone) }.exceptionOrNull()
