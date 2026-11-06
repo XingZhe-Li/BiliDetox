@@ -1,6 +1,7 @@
 package com.github.xingzheli.bilidetox
 
 import com.github.xingzheli.bilidetox.hook.BaseHook
+import com.github.xingzheli.bilidetox.hook.BottomNavHook
 import com.github.xingzheli.bilidetox.hook.BlockUpdateHook
 import com.github.xingzheli.bilidetox.hook.CommentsHook
 import com.github.xingzheli.bilidetox.hook.DetailAdPanelHook
@@ -47,6 +48,7 @@ class XposedInit : IXposedHookLoadPackage {
         Log.d("当前配置: ${RuntimeConfig.get()}")
 
         val hooks = mutableListOf<BaseHook>(
+            BottomNavHook(lpparam.classLoader),
             HomeTabHook(lpparam.classLoader),
             BlockUpdateHook(lpparam.classLoader),
             SettingsEntryHook(lpparam.classLoader),

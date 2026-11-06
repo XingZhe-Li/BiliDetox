@@ -43,7 +43,7 @@ class SettingsDialog(
     private val content = FrameLayout(activity)
     private val handler = Handler(Looper.getMainLooper())
     private var dialog: Dialog? = null
-    private enum class Page { MAIN, HOME, PURIFY, TIME_LOCK, PLEDGE }
+    private enum class Page { MAIN, HOME, BOTTOM_NAV, PURIFY, TIME_LOCK, PLEDGE }
     private var page = Page.MAIN
     private var displayedConfig: ConfigData? = null
     private var displayedPledge = false
@@ -115,6 +115,7 @@ class SettingsDialog(
         dialog?.setTitle(when (page) {
             Page.MAIN -> "BiliDetox 设置"
             Page.HOME -> "首页管理"
+            Page.BOTTOM_NAV -> "底部导航栏"
             Page.PURIFY -> "净化管理"
             Page.TIME_LOCK -> "时段锁"
             Page.PLEDGE -> "发誓锁"
@@ -122,6 +123,7 @@ class SettingsDialog(
         content.removeAllViews()
         content.addView(when (page) {
             Page.HOME -> buildSubpage(HomeSettingsView(activity))
+            Page.BOTTOM_NAV -> buildSubpage(BottomNavSettingsView(activity))
             Page.PURIFY -> buildSubpage(PurifySettingsView(activity))
             Page.TIME_LOCK -> buildSubpage(TimeLockSettingsView(activity))
             Page.PLEDGE -> buildSubpage(PledgeSettingsView(activity))
@@ -174,6 +176,14 @@ class SettingsDialog(
             setPadding(0, dp(context, 14), 0, dp(context, 14))
             isFocusable = true
             setOnClickListener { page = Page.HOME; renderPage() }
+        })
+        list.addView(TextView(context).apply {
+            val bottom = config.bottomNav
+            text = "底部导航栏  ›\n添加${if (bottom.showPublish) "显示" else "隐藏"} · 会员购${if (bottom.showMall) "显示" else "隐藏"}"
+            textSize = 16f
+            setPadding(0, dp(context, 14), 0, dp(context, 14))
+            isFocusable = true
+            setOnClickListener { page = Page.BOTTOM_NAV; renderPage() }
         })
         list.addView(TextView(context).apply {
             text = "净化管理  ›\n${if (config.purify.blockVideoDetailAdPanel) "详情页广告面板已拦截" else "详情页广告面板未拦截"}"

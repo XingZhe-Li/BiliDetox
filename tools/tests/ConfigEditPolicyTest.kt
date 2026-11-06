@@ -3,6 +3,7 @@ import java.util.TimeZone
 
 /** 验证全局誓约不会遗漏任何开关，也不能通过旧页面或批量写入绕过。 */
 fun main() {
+    check(ConfigData().bottomNav.showPublish && ConfigData().bottomNav.showMall)
     val now = 1_793_351_000_000L
     val until = now + 60_000
     val zone = TimeZone.getTimeZone("Asia/Shanghai")
@@ -14,6 +15,8 @@ fun main() {
         "home.showLive" to { it.copy(home = it.home.copy(showLive = !it.home.showLive)) },
         "home.showAnimation" to { it.copy(home = it.home.copy(showAnimation = !it.home.showAnimation)) },
         "home.showCinema" to { it.copy(home = it.home.copy(showCinema = !it.home.showCinema)) },
+        "bottomNav.showPublish" to { it.copy(bottomNav = it.bottomNav.copy(showPublish = !it.bottomNav.showPublish)) },
+        "bottomNav.showMall" to { it.copy(bottomNav = it.bottomNav.copy(showMall = !it.bottomNav.showMall)) },
         "blockUpdate" to { it.copy(blockUpdate = !it.blockUpdate) },
         "hideRelatedVideos" to { it.copy(hideRelatedVideos = !it.hideRelatedVideos) },
         "hideComments" to { it.copy(hideComments = !it.hideComments) },

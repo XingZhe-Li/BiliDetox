@@ -97,6 +97,7 @@ object RuntimeConfig {
             val obj = JSONObject(f.readText())
             ConfigData(
                 home = readHome(obj),
+                bottomNav = readBottomNav(obj.optJSONObject("bottomNav")),
                 blockUpdate = obj.optBoolean("blockUpdate", true),
                 hideRelatedVideos = obj.optBoolean("hideRelatedVideos", false),
                 hideComments = obj.optBoolean("hideComments", false),
@@ -117,6 +118,12 @@ object RuntimeConfig {
     /** 老配置没有 purify 节点时按默认（开启）处理，避免升级后突然出现广告。 */
     private fun readPurify(obj: JSONObject?): PurifyConfig = PurifyConfig(
         blockVideoDetailAdPanel = obj?.optBoolean("blockVideoDetailAdPanel", true) ?: true,
+    )
+
+    /** 没有底部导航设置的旧配置默认保留两个原生入口。 */
+    private fun readBottomNav(obj: JSONObject?): BottomNavConfig = BottomNavConfig(
+        showPublish = obj?.optBoolean("showPublish", true) ?: true,
+        showMall = obj?.optBoolean("showMall", true) ?: true,
     )
 
     private fun readTimeLock(obj: JSONObject?): TimeLockConfig {
@@ -149,6 +156,10 @@ object RuntimeConfig {
     }
 
     private fun toJson(c: ConfigData): String = JSONObject().apply {
+        put("bottomNav", JSONObject().apply {
+            put("showPublish", c.bottomNav.showPublish)
+            put("showMall", c.bottomNav.showMall)
+        })
         put("home", JSONObject().apply {
             put("blankHome", c.home.blankHome)
             put("showRecommendation", c.home.showRecommendation)
