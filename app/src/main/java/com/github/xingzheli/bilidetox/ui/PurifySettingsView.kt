@@ -13,7 +13,7 @@ import com.github.xingzheli.bilidetox.RuntimeConfig
  * 「净化管理」子页：广告净化开关集中在这里。
  *
  * 只收广告相关的能力；「相关推荐」里的广告卡片不归这里——它随
- * RelatedVideosHook 的组件前缀过滤一起隐藏，由主界面的「视频页隐藏「相关推荐」」控制。
+ * RelatedVideosHook 的组件前缀过滤一起隐藏，由 Detoxing 中的开关控制。
  */
 class PurifySettingsView(private val activity: Activity) : LinearLayout(activity) {
     init { orientation = VERTICAL; render() }
@@ -40,7 +40,7 @@ class PurifySettingsView(private val activity: Activity) : LinearLayout(activity
             { it.blockVideoDetailAdPanel },
         ) { purify, value -> purify.copy(blockVideoDetailAdPanel = value) }
         addView(TextView(activity).apply {
-            text = "详情页「相关推荐」里的广告卡片不在这里控制，它随主界面的「视频页隐藏「相关推荐」」一起隐藏。"
+            text = "详情页「相关推荐」里的广告卡片不在这里控制，它随 Detoxing 的「视频页隐藏「相关推荐」」一起隐藏。"
             textSize = 12f
             alpha = 0.7f
             setPadding(0, dp(12), 0, dp(8))

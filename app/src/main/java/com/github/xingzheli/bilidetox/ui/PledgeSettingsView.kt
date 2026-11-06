@@ -41,7 +41,7 @@ class PledgeSettingsView(private val activity: Activity) : LinearLayout(activity
     private fun confirmPledge(until: Long) {
         AlertDialog.Builder(SettingsTheme.dialogContext(activity))
             .setTitle("确认发誓锁定")
-            .setMessage("发誓锁定至 ${format(until)}。\n\n在此之前，BiliDetox 的所有可编辑选项都会锁定，包括主设置页的全部开关、时段和誓约终止时间。即使处于可用时段，也不能修改这些设置。\n\n仍可浏览设置，可用时段仍可正常使用 B 站。")
+            .setMessage("发誓锁定至 ${format(until)}。\n\n在此之前，BiliDetox 的所有可编辑选项都会锁定，包括所有功能开关、时段和誓约终止时间。即使处于可用时段，也不能修改这些设置。\n\n仍可浏览设置，可用时段仍可正常使用 B 站。")
             .setNegativeButton("取消", null)
             .setPositiveButton("确认发誓锁定") { _, _ ->
                 save { it.copy(pledgeUntil = until) }

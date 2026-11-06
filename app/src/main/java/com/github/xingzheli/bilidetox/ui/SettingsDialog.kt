@@ -43,7 +43,7 @@ class SettingsDialog(
     private val content = FrameLayout(activity)
     private val handler = Handler(Looper.getMainLooper())
     private var dialog: Dialog? = null
-    private enum class Page { MAIN, HOME, BOTTOM_NAV, PURIFY, TIME_LOCK, PLEDGE }
+    private enum class Page { MAIN, DETOXING, HOME, BOTTOM_NAV, PURIFY, TIME_LOCK, PLEDGE }
     private var page = Page.MAIN
     private var displayedConfig: ConfigData? = null
     private var displayedPledge = false
@@ -54,7 +54,7 @@ class SettingsDialog(
             val config = RuntimeConfig.get()
             val now = System.currentTimeMillis()
             if (config != displayedConfig || config.timeLock.isPledged(now) != displayedPledge ||
-                TimeLockPolicy.editRestriction(config.timeLock, now) != displayedRestriction) renderPage()
+                TimeLockPolicy.editRestriction(config.timeLock, now) != displayedRestriction) renderPage(preserveScroll = true)
             handler.postDelayed(this, 1000)
         }
     }
@@ -106,7 +106,8 @@ class SettingsDialog(
         return android.app.AlertDialog.Builder(SettingsTheme.dialogContext(activity))
     }
 
-    private fun renderPage() {
+    private fun renderPage(preserveScroll: Boolean = false) {
+        val scrollY = if (preserveScroll) (content.getChildAt(0) as? ScrollView)?.scrollY else null
         val config = RuntimeConfig.get()
         val now = System.currentTimeMillis()
         displayedConfig = config
@@ -114,6 +115,7 @@ class SettingsDialog(
         displayedRestriction = TimeLockPolicy.editRestriction(config.timeLock, now)
         dialog?.setTitle(when (page) {
             Page.MAIN -> "BiliDetox 设置"
+            Page.DETOXING -> "Detoxing"
             Page.HOME -> "首页管理"
             Page.BOTTOM_NAV -> "底部导航栏"
             Page.PURIFY -> "净化管理"
@@ -122,6 +124,7 @@ class SettingsDialog(
         })
         content.removeAllViews()
         content.addView(when (page) {
+            Page.DETOXING -> buildSubpage(buildDetoxContent(activity, config, displayedPledge))
             Page.HOME -> buildSubpage(HomeSettingsView(activity))
             Page.BOTTOM_NAV -> buildSubpage(BottomNavSettingsView(activity))
             Page.PURIFY -> buildSubpage(PurifySettingsView(activity))
@@ -129,6 +132,9 @@ class SettingsDialog(
             Page.PLEDGE -> buildSubpage(PledgeSettingsView(activity))
             Page.MAIN -> buildContent(activity, config, displayedPledge)
         })
+        if (scrollY != null) (content.getChildAt(0) as? ScrollView)?.let { scroll ->
+            scroll.post { scroll.scrollTo(0, scrollY) }
+        }
     }
 
     private fun buildSubpage(settings: View): View {
@@ -146,7 +152,7 @@ class SettingsDialog(
         return ScrollView(activity).apply { addView(list) }
     }
 
-    private fun buildContent(context: Context, config: ConfigData, pledged: Boolean): View {
+    private fun buildDetoxContent(context: Context, config: ConfigData, pledged: Boolean): View {
         val items = listOf(
             Item("blockUpdate", "禁用应用内更新检查", "屏蔽启动检查、手动检查与强更提示"),
             Item("hideRelatedVideos", "视频页隐藏「相关推荐」", "移除详情页推荐列表与全屏播放器右侧推荐拉条"),
@@ -156,11 +162,36 @@ class SettingsDialog(
             Item("strictSearchResults", "综合搜索关键词过滤", "第一页前10条视频须有命中，不足10条检查全部；通过后仅前5条免过滤"),
         )
 
+        val list = LinearLayout(context).apply { orientation = LinearLayout.VERTICAL }
+
+        for (item in items) {
+            list.addView(buildRow(context, item, configValue(config, item.key), !pledged) { value ->
+                RuntimeConfig.update { c -> withKey(c, item.key, value) }
+            })
+        }
+        list.addView(TextView(context).apply {
+            text = "改动即时保存；回到相应页面后生效。发誓锁定期间所有设置均不可修改。"
+            textSize = 12f
+            alpha = 0.65f
+            setPadding(0, dp(context, 8), 0, dp(context, 12))
+        })
+        return list
+    }
+
+    private fun buildContent(context: Context, config: ConfigData, pledged: Boolean): View {
         val list = LinearLayout(context).apply {
             orientation = LinearLayout.VERTICAL
             val pad = dp(context, 20)
             setPadding(pad, dp(context, 8), pad, dp(context, 12))
         }
+
+        list.addView(TextView(context).apply {
+            text = "Detoxing  ›\n更新、视频页与搜索净化"
+            textSize = 16f
+            setPadding(0, dp(context, 14), 0, dp(context, 14))
+            isFocusable = true
+            setOnClickListener { page = Page.DETOXING; renderPage() }
+        })
 
         if (pledged) {
             list.addView(TextView(context).apply {
@@ -208,19 +239,6 @@ class SettingsDialog(
             isFocusable = true
             setOnClickListener { page = Page.PLEDGE; renderPage() }
         })
-        for (item in items) {
-            list.addView(buildRow(context, item, configValue(config, item.key), !pledged) { value ->
-                RuntimeConfig.update { c -> withKey(c, item.key, value) }
-            })
-        }
-        list.addView(
-            TextView(context).apply {
-                text = "改动即时保存；回到相应页面后生效。发誓锁定期间所有设置均不可修改。"
-                textSize = 12f
-                alpha = 0.65f
-                setPadding(0, dp(context, 8), 0, dp(context, 12))
-            },
-        )
         return ScrollView(context).apply { addView(list) }
     }
 
