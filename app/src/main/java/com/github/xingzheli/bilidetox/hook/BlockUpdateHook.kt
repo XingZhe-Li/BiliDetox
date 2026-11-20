@@ -57,12 +57,21 @@ class BlockUpdateHook(private val classLoader: ClassLoader) : BaseHook {
             ?.let { blocked += it.hookIfBlocked() }
             ?: Log.w("未找到 checkUpdateAndShowDialog")
 
-        // 已缓存的强制更新。返回 null 而不是空 Task：
-        // 调用方 checkUpdateInStartup 已经被我们干掉了，这里唯一的其它调用者
-        // 也只是拿它判空，返回 null 是安全的。
-        updateHelper.findMethodOrNull("getExistingForceUpdate", Activity::class.java)
-            ?.let { blocked += it.hookIfBlocked() }
-            ?: Log.w("未找到 getExistingForceUpdate")
+        // 已缓存的强制更新。网络变化触发 UpdaterActionType.FORCE 时，
+        // com.bilibili.gripper.update.j$a#checkUpdate 会直接对返回值调用 .onSuccess(...)；
+        // 返回 null 会触发 NullPointerException，因此返回 Task.forResult(null)。
+        val existingForceUpdate = updateHelper.findMethodOrNull("getExistingForceUpdate", Activity::class.java)
+        if (existingForceUpdate == null) {
+            Log.w("未找到 getExistingForceUpdate")
+        } else {
+            val taskForResult = "bolts.Task".findClassOrNull(classLoader)
+                ?.findMethodOrNull("forResult", Any::class.java)
+            if (taskForResult == null) {
+                Log.w("未找到 bolts.Task#forResult，跳过拦截 getExistingForceUpdate 以免 NPE")
+            } else {
+                blocked += existingForceUpdate.hookIfBlocked { taskForResult.invoke(null, null) }
+            }
+        }
 
         // 更新相关的埋点上报，顺手堵掉，避免无谓的后台任务。
         updateHelper.findUniqueMethodByNameOrNull("checkInternalUpdateFlag")
@@ -71,14 +80,14 @@ class BlockUpdateHook(private val classLoader: ClassLoader) : BaseHook {
         Log.d("禁用更新：已拦截 $blocked 个方法")
     }
 
-    /** 挂上「配置开启时置空返回值」的 before hook。 */
-    private fun java.lang.reflect.Method.hookIfBlocked(): Int {
+    /** 挂上「配置开启时替换返回值」的 before hook。 */
+    private fun java.lang.reflect.Method.hookIfBlocked(resultProvider: () -> Any? = { null }): Int {
         XposedBridge.hookMethod(
             this,
             object : XC_MethodHook() {
                 override fun beforeHookedMethod(param: MethodHookParam) {
                     if (RuntimeConfig.get().blockUpdate) {
-                        param.result = null
+                        param.result = resultProvider()
                     }
                 }
             },
